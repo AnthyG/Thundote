@@ -6,7 +6,7 @@ Vue.component("avatar-img", {
         cert_user_id: String,
         size: {
             validator: function(value) {
-                var sizes = ["xs", "sm", "lg", "xl"];
+                var sizes = ["", "xs", "sm", "lg", "xl"];
 
                 return sizes.indexOf(value) !== -1;
             },
@@ -20,8 +20,8 @@ Vue.component("avatar-img", {
         pixelSize: function() {
             var size = this.size;
 
-            var sizes = ["xs", "sm", "lg", "xl"];
-            var sizes2 = [.8, 1.2, 2.4, 3.2];
+            var sizes = ["", "xs", "sm", "lg", "xl"];
+            var sizes2 = [1.6, .8, 1.2, 2.4, 3.2];
 
             var i = sizes.indexOf(size);
 
@@ -42,7 +42,7 @@ Vue.component("avatar", {
         cert_user_id: String,
         size: {
             validator: function(value) {
-                var sizes = ["xs", "sm", "lg", "xl"];
+                var sizes = ["", "xs", "sm", "lg", "xl"];
 
                 return sizes.indexOf(value) !== -1;
             },

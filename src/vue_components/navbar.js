@@ -21,6 +21,9 @@ Vue.component("navbar", {
             else
                 this.menuShown = !this.menuShown;
         },
+        toggleLeftSidebar: function() {
+            this.$emit('toggleLeftSidebar');
+        },
         logIn: function() {
             this.$emit('logIn');
         },
@@ -36,15 +39,20 @@ Vue.component("navbar", {
         <header class="navbar fixed">
             <nav class="navbar container grid-lg">
                 <section class="navbar-section">
-                    <a class="#off-canvas-toggle btn btn-link btn-action" href="#sidebar-left">
+                    <a class="#off-canvas-toggle btn btn-link btn-action" href="#sidebar-left" v-on:click.prevent="toggleLeftSidebar">
                         <i class="icon icon-menu"></i>
                     </a>
+                    <!--
                     <ul class="tab">
-                        <li class="tab-item active">Home</li>
+                        <li class="tab-item active" v-on:click.prevent="goto('Home')">Home</li>
                     </ul>
+                    -->
                 </section>
                 <section class="navbar-center">
-                    <a href="javascript:void(0)" class="mr-10 navbar-brand"><span class="hide-sm">Thundote</span></a>
+                    <div class="input-group input-inline">
+                        <input class="form-input" type="text" placeholder="search">
+                        <button class="btn btn-link btn-action input-group-btn"><i class="icon icon-search"></i></button>
+                    </div>
                 </section>
                 <section class="navbar-section">
                     <div class="dropdown dropdown-right" v-bind:class="{'active': menuShown}">

@@ -1,3 +1,4 @@
+@import "variables";
 @import "../css/material-icons.css";
 .mdi {
     font-family: 'Material Icons';
@@ -28,4 +29,51 @@ body {
 
 .hide {
     display: none;
+}
+
+.app-brand {
+    color: $primary-color;
+    left: 1.5rem;
+    position: fixed;
+    top: .85rem;
+    .app-logo {
+        align-items: center;
+        border-radius: $border-radius;
+        display: inline-flex;
+        height: 2rem;
+        padding: .2rem;
+        width: auto;
+        &:focus,
+        &:hover {
+            text-decoration: none;
+        }
+        img {
+            display: inline;
+            height: auto;
+            width: 1.6rem;
+        }
+        h2 {
+            display: inline;
+            font-size: .9rem;
+            font-weight: 500;
+            margin-bottom: 0;
+            margin-left: .5rem;
+            margin-right: .5rem;
+        }
+    }
+}
+
+@media (max-width: 960px) {
+    .off-canvas {
+        .off-canvas-toggle {
+            z-index: $zindex-3;
+        }
+    }
+    .app-sidebar {
+        .app-brand {
+            margin: .85rem 1.5rem;
+            padding: 0;
+            position: static;
+        }
+    }
 }
