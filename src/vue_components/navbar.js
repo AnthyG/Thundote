@@ -1,0 +1,77 @@
+var Vue = require("vue/dist/vue.min.js");
+var Router = require("../router.js");
+
+Vue.component("navbar", {
+    props: ['userInfo'],
+    data: function() {
+        return {
+            menuShown: false
+        }
+    },
+    computed: {
+        isLoggedIn: function() {
+            if (this.userInfo == null) return false;
+            return this.userInfo.cert_user_id != null;
+        }
+    },
+    methods: {
+        toggleMenu: function(to) {
+            if (to && typeof to === "boolean")
+                this.menuShown = to;
+            else
+                this.menuShown = !this.menuShown;
+        },
+        logIn: function() {
+            this.$emit('logIn');
+        },
+        logOut: function() {
+            this.$emit('logOut');
+        },
+        goto: function(to) {
+            this.menuShown = false;
+            Router.navigate(to);
+        }
+    },
+    template: `
+        <header class="navbar fixed">
+            <nav class="navbar container grid-lg">
+                <section class="navbar-section">
+                    <a class="#off-canvas-toggle btn btn-link btn-action" href="#sidebar-left">
+                        <i class="icon icon-menu"></i>
+                    </a>
+                    <ul class="tab">
+                        <li class="tab-item active">Home</li>
+                    </ul>
+                </section>
+                <section class="navbar-center">
+                    <a href="javascript:void(0)" class="mr-10 navbar-brand"><span class="hide-sm">Thundote</span></a>
+                </section>
+                <section class="navbar-section">
+                    <div class="dropdown dropdown-right" v-bind:class="{'active': menuShown}">
+                        <button class="btn btn-action btn-lg btn-link circle dropdown-btn" tabindex="0" v-on:focus="toggleMenu(true)" v-on:mousedown="toggleMenu" v-on:blur="toggleMenu(false)">
+                            <div style="margin-top: -.3rem;">
+                                <avatar-img v-if="isLoggedIn" v-bind:cert_user_id="userInfo.cert_user_id"></avatar-img>
+                                <avatar-img v-else cert_user_id=""></avatar-img>
+                            </div>
+                        </button>
+                        <ul class="menu light">
+                            <li class="menu-item">
+                                <avatar v-if="isLoggedIn" v-bind:cert_user_id="userInfo.cert_user_id" size="xl"></avatar>
+                                <avatar v-else cert_user_id="" size="xl"></avatar>
+                            </li>
+                            <li class="divider"></li>
+                            <li class="menu-item">
+                                <a v-if="isLoggedIn" href="#Select+user" id="select_user" v-on:click.prevent="logOut">
+                                    Log out
+                                </a>
+                                <a v-else href="#Select+user" id="select_user" v-on:click.prevent="logIn">
+                                    Log in
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </nav>
+        </header>
+    `
+});
