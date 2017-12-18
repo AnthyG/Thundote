@@ -1,8 +1,9 @@
 var ZeroFrame = require("./ZeroFrame.js");
 
+var Vue = require("vue/dist/vue.min.js");
+
 var Router = require("./router.js");
 
-var Vue = require("vue/dist/vue.min.js");
 var VueZeroFrameRouter = require("./vue-zeroframe-router.js");
 
 require("./vue_components/avatar.js");
@@ -12,6 +13,7 @@ require("./vue_components/noteLists.js");
 
 var autosize = require("autosize");
 var marked = require("marked");
+var moment = require("moment");
 var pnglib = require("pnglib");
 var svg4everybody = require("svg4everybody");
 
@@ -118,27 +120,6 @@ markedR.link = function(href, title, text) {
 
     return '<a href="' + href + '" onclick="return openNewTab(\'' + href + '\');" ' + (title ? ('title="' + title + '"') : '') + '>' + text + '</a>';
 };
-var markedR2 = new marked.Renderer();
-markedR2.link = function(href, title, text) {
-    var href = href || '',
-        title = title || '',
-        text = text || '';
-
-    if (this.options.sanitize) {
-        try {
-            var prot = decodeURIComponent(unescape(href))
-                .replace(/[^\w:]/g, '')
-                .toLowerCase();
-        } catch (e) {
-            return '';
-        }
-        if (prot.indexOf('javascript:') === 0 || prot.indexOf('vbscript:') === 0 || prot.indexOf('data:') === 0) {
-            return '';
-        }
-    }
-
-    return '<a href="?S:' + href + '" onclick="return app.loadBlog(\'' + href + '\', 1);" ' + (title ? ('title="' + title + '"') : '') + '>' + text + '</a>';
-};
 
 
 
@@ -155,13 +136,20 @@ var app = new Vue({
     el: '#app',
     template: `
         <div class="off-canvas">
-            <navbar v-on:toggleLeftSidebar="toggleLeftSidebar" v-on:logIn="logIn" v-on:logOut="logOut" v-bind:user-info="userInfo"></navbar>
+            <navbar v-on:toggleLeftSidebar="toggleLeftSidebar" v-on:logIn="logIn" v-on:logOut="logOut" v-bind:user-info="userInfo"
+            v-on:setSearch="setSearch"></navbar>
             <div id="sidebar-left" v-bind:class="'app-sidebar off-canvas-sidebar ' + (leftSidebarShown ? 'active' : '')">
                 <div class="app-brand">
                     <a class="app-logo" href="#Home" v-on:click.prevent="goto('Home')">
                         <img src="" />
                         <h2>Thundote</h2>
                     </a>
+                    <!-- DOESN'T SEEM TO WORK
+                    <route-link to="/" class="app-logo">
+                        <img src="" />
+                        <h2>Thundote</h2>
+                    </route-link>
+                    -->
                 </div>
             </div>
         
@@ -169,7 +157,9 @@ var app = new Vue({
         
             <div class="off-canvas-content" style="padding-left: .4rem;">
                 <div class="container grid-lg">
-                    <component ref="view" v-bind:is="currentView" v-on:addNote="addNote" v-bind:getNoteList="getNoteList" v-bind:noteList="noteList"></component>
+                    <component ref="view" v-bind:is="currentView"
+                    v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
+                    v-bind:getNoteList="getNoteList" v-bind:noteList="noteList" v-bind:searchFor="searchFor"></component>
                 </div>
             </div>
         </div>
@@ -182,7 +172,8 @@ var app = new Vue({
         userInfo: null,
         leftSidebarShown: false,
         noteList: null,
-        noteListP: null
+        noteListP: null,
+        searchFor: ''
     },
     computed: {
         isLoggedIn: function() {
@@ -210,6 +201,11 @@ var app = new Vue({
             this.leftSidebarShown = false;
             Router.navigate(to);
         },
+        setSearch: function(s) {
+            console.log("Setting searchFor", s);
+            if (typeof s === "string")
+                this.searchFor = s;
+        },
         getUserInfo: function() {
             if (this.siteInfo == null || this.siteInfo.cert_user_id == null) {
                 this.userInfo = null;
@@ -231,28 +227,77 @@ var app = new Vue({
             // console.log(this);
             // if (!this.computed.isLoggedIn()) return false;
 
-            this.noteList = [{
-                "uuid": generateUUID(),
-                "title": generateUUID(),
-                "body": "# BODY\n> Yup\n\n### Yeah",
-                "lasteditedenc": "",
-                "lastedited": "",
-                "encrypted": false
-            }];
+            this.noteList = [];
+            // this.addNote();
 
             console.log("Got noteList", this.noteList);
         },
-        addNote: function() {
+        addNote: function(note) {
+            // if (!note.title || !note.body) return false;
+            var note = note || {};
+
             this.noteList.push({
                 "uuid": generateUUID(),
-                "title": generateUUID(),
-                "body": "# BODY\n> Yup\n\n### Yeah",
+                "title": note.title || generateUUID(),
+                "body": note.body || generateUUID(),
+                "todoCheck": note.todoCheck || false,
                 "lasteditedenc": "",
-                "lastedited": "",
-                "encrypted": false
+                "lastedited": moment().format("x"),
+                "encrypted": note.encrypted || false
             });
 
             console.log("Added note", this.noteList);
+        },
+        todoToggle: function(note, to) {
+            var uuid = note.uuid;
+            var nid;
+
+            var editableNotes = this.noteList.filter(function(a, b) {
+                nid = a.uuid === uuid ? b : nid;
+                return a.uuid === uuid;
+            });
+            if (editableNotes.length !== 1) return false;
+
+            editableNotes[0].todoCheck = (typeof to === "boolean" ? to : !editableNotes[0].todoCheck);
+
+            this.noteList[nid] = editableNotes[0];
+
+            console.log("Toggled todo-state of note", uuid, editableNotes[0].todoCheck);
+        },
+        editNote: function(note) {
+            var uuid = note.uuid;
+            var nid;
+
+            var editableNotes = this.noteList.filter(function(a, b) {
+                nid = a.uuid === uuid ? b : nid;
+                return a.uuid === uuid;
+            });
+            if (editableNotes.length !== 1) return false;
+
+            for (var x in editableNotes[0]) {
+                if (note.hasOwnProperty(x)) {
+                    editableNotes[0][x] = note[x];
+                }
+            }
+            editableNotes[0].lastedited = moment().format("x");
+
+            this.noteList[nid] = editableNotes[0];
+        },
+        deleteNote: function(note) {
+            var uuid = note.uuid;
+            var nid = null;
+
+            var editableNotes = this.noteList.filter(function(a, b) {
+                nid = a.uuid === uuid ? b : nid;
+                return a.uuid === uuid;
+            });
+
+            console.log(nid, editableNotes);
+
+            if (nid !== null) {
+                this.noteList.splice(nid, 1);
+                console.log("Deleted note", nid, uuid);
+            }
         }
     }
 });
@@ -282,6 +327,8 @@ class Page extends ZeroFrame {
     }
 
     onRequest(cmd, message) {
+        Router.listenForBack(cmd, message);
+
         if (cmd == "setSiteInfo") {
             this.site_info = message.params;
             app.siteInfo = message.params;

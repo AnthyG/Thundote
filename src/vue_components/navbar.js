@@ -5,6 +5,7 @@ Vue.component("navbar", {
     props: ['userInfo'],
     data: function() {
         return {
+            searchFor: '',
             menuShown: false
         }
     },
@@ -33,6 +34,11 @@ Vue.component("navbar", {
         goto: function(to) {
             this.menuShown = false;
             Router.navigate(to);
+        },
+        setSearch: function(s) {
+            this.searchFor = s;
+            console.log("Searching", s);
+            this.$emit('setSearch', s);
         }
     },
     template: `
@@ -50,7 +56,8 @@ Vue.component("navbar", {
                 </section>
                 <section class="navbar-center">
                     <div class="input-group input-inline">
-                        <input class="form-input" type="text" placeholder="search">
+                        <input class="form-input" type="text" placeholder="search" v-bind:value="this.searchFor"
+                        v-on:input="setSearch($event.target.value)">
                         <button class="btn btn-link btn-action input-group-btn"><i class="icon icon-search"></i></button>
                     </div>
                 </section>
