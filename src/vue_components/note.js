@@ -26,7 +26,9 @@ Vue.component("note-card", {
     template: `
         <div class="card">
             <div class="card-header">
-                <button class="btn btn-action btn-link btn-sm float-right" v-on:click.prevent="todoToggle"><i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i></button>
+                <button class="btn btn-action btn-link btn-sm float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
+                    <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
+                </button>
                 <div v-bind:class="'card-title h5 ' + (note.todoCheck ? 'text-gray' : '')">{{ note.title }}</div>
                 <div class="card-subtitle text-gray">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
             </div>
@@ -36,7 +38,7 @@ Vue.component("note-card", {
             <div class="card-footer">
                 <button class="btn btn-primary">Share</button>
                 <button class="btn btn-link">Encrypt</button>
-                <button class="btn btn-action btn-warning float-right" v-on:click.prevent="deleteNote"><i class="icon icon-delete"></i></button>
+                <button class="btn btn-action btn-warning float-right tooltip tooltip-bottom" data-tooltip="Delete" v-on:click.prevent="deleteNote"><i class="icon icon-delete"></i></button>
             </div>
         </div>
     `
