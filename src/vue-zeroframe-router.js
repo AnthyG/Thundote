@@ -1,4 +1,5 @@
 //export default MyPlugin;
+var Router = require("./router.js");
 
 const VueRouteLink = {
     props: ['to'],

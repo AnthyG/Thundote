@@ -45,7 +45,7 @@ Vue.component("navbar", {
         <header class="navbar fixed">
             <nav class="navbar container grid-lg">
                 <section class="navbar-section">
-                    <a class="#off-canvas-toggle btn btn-link btn-action" href="#sidebar-left" v-on:click.prevent="toggleLeftSidebar">
+                    <a class="off-canvas-toggle btn btn-link btn-action" href="#sidebar-left" v-on:click.prevent="toggleLeftSidebar">
                         <i class="icon icon-menu"></i>
                     </a>
                     <!--

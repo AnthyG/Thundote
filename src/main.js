@@ -132,7 +132,7 @@ function openNewTab(url) {
 
 Vue.use(VueZeroFrameRouter.VueZeroFrameRouter);
 
-var app = new Vue({
+app = new Vue({
     el: '#app',
     template: `
         <div class="off-canvas">
@@ -140,16 +140,10 @@ var app = new Vue({
             v-on:setSearch="setSearch"></navbar>
             <div id="sidebar-left" v-bind:class="'app-sidebar off-canvas-sidebar ' + (leftSidebarShown ? 'active' : '')">
                 <div class="app-brand">
-                    <a class="app-logo" href="#Home" v-on:click.prevent="goto('Home')">
-                        <img src="" />
-                        <h2>Thundote</h2>
-                    </a>
-                    <!-- DOESN'T SEEM TO WORK
-                    <route-link to="/" class="app-logo">
+                    <route-link to="" class="app-logo">
                         <img src="" />
                         <h2>Thundote</h2>
                     </route-link>
-                    -->
                 </div>
             </div>
         
@@ -215,13 +209,20 @@ var app = new Vue({
             var dis = this;
 
             page.cmd("dbQuery", [
-                ""
+                "SELECT * FROM extra_data LEFT JOIN json USING (json_id) WHERE auth_address = '" + dis.siteInfo.auth_address + "'"
             ], (res) => {
+                if (!res || res.length !== 1 || !res[0]) return false;
+
+                var user = res[0];
+
                 dis.userInfo = {
+                    public_key: user.public_key,
                     cert_user_id: dis.siteInfo.cert_user_id,
-                    auth_address: dis.siteInfo.auth_address
+                    auth_address: user.auth_address
                 };
-            })
+
+                console.log("Got user-info", res, user, dis.siteInfo, dis.userInfo);
+            });
         },
         getNoteList: function() {
             // console.log(this);
@@ -232,21 +233,81 @@ var app = new Vue({
 
             console.log("Got noteList", this.noteList);
         },
-        addNote: function(note) {
+        addNote: function(note, key) {
             // if (!note.title || !note.body) return false;
             var note = note || {};
 
-            this.noteList.push({
+            var key = key || "";
+
+            var nNote = {
                 "uuid": generateUUID(),
                 "title": note.title || generateUUID(),
                 "body": note.body || generateUUID(),
                 "todoCheck": note.todoCheck || false,
                 "lasteditedenc": "",
                 "lastedited": moment().format("x"),
-                "encrypted": note.encrypted || false
-            });
+                "encrypted": (key ? true : false)
+            };
 
-            console.log("Added note", this.noteList);
+            this.noteList.push(nNote);
+
+            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json"
+            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json"
+            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json"
+
+            var writeBlaTo = function(to, bla) {
+                var ip = to === 1 ? data2_inner_path : (to === 2 ? content_inner_path : data_inner_path);
+
+                console.log("Adding note 2", to, ip, bla);
+
+                // Encode data array to utf8 json text
+                var json_raw = unescape(encodeURIComponent(JSON.stringify(bla, undefined, '\t')));
+                var json_rawA = btoa(json_raw);
+
+                page.cmd("fileWrite", [
+                    ip,
+                    json_rawA
+                ], (res) => {
+                    if (res == "ok") {
+                        page.verifyUserFiles(null, function() {
+                            console.log("Added note", nNote);
+                        });
+                    } else {
+                        page.cmd("wrapperNotification", [
+                            "error", "File write error: " + JSON.stringify(res5)
+                        ]);
+                    }
+                });
+            };
+
+            page.cmd("fileGet", {
+                "inner_path": data2_inner_path,
+                "required": false
+            }, (data) => {
+                var data = data ? JSON.parse(data) : {};
+
+                console.log("Adding note", data);
+
+                page.cmd("eciesEncrypt", [
+                    JSON.stringify(nNote)
+                ], (res1) => {
+                    if (nNote.encrypted) {
+                        var bR = btoa(key);
+
+                        page.cmd("aesEncrypt", [
+                            res1,
+                            bR,
+                            bR
+                        ], (res2) => {
+                            data.local_notes.push(res2);
+                            writeBlaTo(1, data);
+                        });
+                    } else {
+                        data.local_notes.push(res1);
+                        writeBlaTo(1, data);
+                    }
+                });
+            });
         },
         todoToggle: function(note, to) {
             var uuid = note.uuid;
@@ -305,6 +366,186 @@ var app = new Vue({
 
 
 class Page extends ZeroFrame {
+    verifyUserFiles(cb1, cb2) {
+        console.log("Verifying User Files...");
+
+        var data_inner_path = "data/users/" + page.site_info.auth_address + "/data.json";
+        var data2_inner_path = "data/users/" + page.site_info.auth_address + "/data_private.json";
+        var content_inner_path = "data/users/" + page.site_info.auth_address + "/content.json";
+
+        var curpversion = 1;
+
+        function verifyData2(cb1, cb2) {
+            page.cmd("fileGet", {
+                "inner_path": data2_inner_path,
+                "required": false
+            }, (data) => {
+                console.log("BEFORE 1", JSON.parse(JSON.stringify(data)));
+                if (data)
+                    var data = JSON.parse(data);
+                else
+                    var data = {};
+                var olddata = JSON.parse(JSON.stringify(data));
+                console.log("BEFORE 2", JSON.parse(JSON.stringify(olddata)));
+
+                if (data.pversion !== curpversion)
+                    data = {
+                        "pversion": curpversion
+                    };
+
+                if (!data.hasOwnProperty("local_notes"))
+                    data.local_notes = [];
+
+                console.log("VERIFIED data_private.json", JSON.parse(JSON.stringify(olddata)), JSON.parse(JSON.stringify(data)));
+
+                var json_raw = unescape(encodeURIComponent(JSON.stringify(data, undefined, '\t')));
+                var json_rawA = btoa(json_raw);
+
+                if (JSON.stringify(data) !== JSON.stringify(olddata)) {
+                    console.log("data_private.json HAS RECEIVED A UPDATE!");
+                    page.cmd("fileWrite", [
+                        data2_inner_path,
+                        json_rawA
+                    ], (res) => {
+                        if (res == "ok") {
+                            console.log("data_private.json HAS BEEN UPDATED!");
+                        } else {
+                            page.cmd("wrapperNotification", [
+                                "error", "File write error: " + JSON.stringify(res)
+                            ]);
+                        }
+                    });
+                }
+            });
+            verifyData(cb1, cb2);
+        }
+
+        function verifyData(cb1, cb2) {
+            page.cmd("fileGet", {
+                "inner_path": data_inner_path,
+                "required": false
+            }, (data) => {
+                if (data)
+                    var data = JSON.parse(data);
+                else
+                    var data = {};
+                var olddata = JSON.parse(JSON.stringify(data));
+
+                if (!data.hasOwnProperty("notes"))
+                    data.notes = [];
+
+                if (!data.hasOwnProperty("shared"))
+                    data.shared = [];
+
+                if (data.hasOwnProperty("public_key"))
+                    delete data.public_key;
+
+                if (!data.hasOwnProperty("extra_data") || !data.extra_data[0])
+                    data.extra_data = [{}];
+
+                if (!data.extra_data[0].hasOwnProperty("auth_address"))
+                    data.extra_data[0].auth_address = page.site_info.auth_address;
+
+                if (!data.extra_data[0].hasOwnProperty("public_key") || !data.extra_data[0].public_key) {
+                    page.cmd("userPublickey", [], (public_key) => {
+                        data.extra_data[0].public_key = public_key;
+                        verifyData_2(data, olddata, cb1, cb2);
+                    });
+                } else {
+                    verifyData_2(data, olddata, cb1, cb2);
+                }
+            });
+        }
+
+        function verifyData_2(data, olddata, cb1, cb2) {
+            console.log("VERIFIED data.json", olddata, data);
+
+            if (JSON.stringify(data) !== JSON.stringify(olddata)) {
+                console.log("data.json HAS RECEIVED A UPDATE!");
+
+                var json_raw = unescape(encodeURIComponent(JSON.stringify(data, undefined, '\t')));
+                var json_rawA = btoa(json_raw);
+
+                page.cmd("fileWrite", [
+                    data_inner_path,
+                    json_rawA
+                ], (res) => {
+                    if (res == "ok") {
+                        console.log("data.json HAS BEEN UPDATED!");
+
+                        if (typeof cb1 === "function")
+                            cb1(data, olddata, true);
+                        verifyContent(data, olddata, cb2);
+                    } else {
+                        page.cmd("wrapperNotification", [
+                            "error", "File write error: " + JSON.stringify(res)
+                        ]);
+                    }
+                });
+            } else {
+                if (typeof cb1 === "function")
+                    cb1(data, olddata, false);
+                verifyContent(data, olddata, cb2);
+            }
+        }
+
+        function verifyContent(data, olddata, cb2) {
+            page.cmd("fileGet", {
+                "inner_path": content_inner_path,
+                "required": false
+            }, (data2) => {
+                if (data2)
+                    var data2 = JSON.parse(data2);
+                else
+                    var data2 = {};
+                var olddata2 = JSON.parse(JSON.stringify(data2));
+
+                var curoptional = ""; // ".+\\.(png|jpg|jpeg|gif|mp3|ogg|mp4)"
+                var curignore = "(?!(data(?:_private)?.json))"; // "(?!(.+\\.(png|jpg|jpeg|gif|mp3|ogg|mp4)|data.json))"
+                if (!data2.hasOwnProperty("optional") || data2.optional !== curoptional)
+                    data2.optional = curoptional;
+                if (!data2.hasOwnProperty("ignore") || data2.ignore !== curignore)
+                    data2.ignore = curignore;
+                console.log("VERIFIED content.json", olddata2, data2);
+
+                if (JSON.stringify(data2) !== JSON.stringify(olddata2) || JSON.stringify(data) !== JSON.stringify(olddata)) {
+                    console.log("content.json HAS RECEIVED A UPDATE!");
+
+                    var json_raw2 = unescape(encodeURIComponent(JSON.stringify(data2, undefined, '\t')));
+                    var json_rawA2 = btoa(json_raw2);
+
+                    page.cmd("fileWrite", [
+                        content_inner_path,
+                        json_rawA2
+                    ], (res) => {
+                        if (res == "ok") {
+                            console.log("content.json HAS BEEN UPDATED!");
+                            if (typeof cb2 === "function")
+                                cb2(data2, olddata2, true);
+                            page.cmd("siteSign", {
+                                "inner_path": content_inner_path
+                            }, (res) => {
+                                page.cmd("sitePublish", {
+                                    "inner_path": content_inner_path,
+                                    "sign": false
+                                }, function() {});
+                            });
+                        } else {
+                            page.cmd("wrapperNotification", [
+                                "error", "File write error: " + JSON.stringify(res)
+                            ]);
+                        }
+                    });
+                } else {
+                    if (typeof cb2 === "function")
+                        cb2(data2, olddata2, false);
+                }
+            });
+        }
+
+        verifyData2(cb1, cb2);
+    }
+
     selectUser(cb = null) {
         this.cmd("certSelect", {
             accepted_domains: [
@@ -349,9 +590,12 @@ class Page extends ZeroFrame {
 
     onOpenWebsocket() {
         this.cmd("siteInfo", [], function(site_info) {
-            this.site_info = site_info;
+            page.site_info = site_info;
             app.siteInfo = site_info;
 
+            page.verifyUserFiles();
+
+            // if (site_info.cert_user_id) {
             app.getUserInfo();
 
             page.setSiteInfo(site_info);
@@ -359,6 +603,7 @@ class Page extends ZeroFrame {
             page.cmd("serverInfo", [], (res) => {
                 app.serverInfo = res;
             });
+            // }
         });
     }
 }

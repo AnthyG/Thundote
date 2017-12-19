@@ -22,7 +22,7 @@ var paths = {
 gulp.task("watch", function() {
     gulp.watch(paths.pages, ["html"]);
     gulp.watch(paths.styles, ["styles"]);
-    gulp.watch(paths.styles, ["styles2"]);
+    gulp.watch(paths.styles2, ["styles2"]);
     gulp.watch(paths.scripts, ["scripts"]);
 });
 

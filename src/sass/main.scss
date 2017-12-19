@@ -77,3 +77,11 @@ body {
         }
     }
 }
+
+@media (min-width: 960px) {
+    .off-canvas {
+        .off-canvas-sidebar {
+            height: calc(100vh - 2.4rem);
+        }
+    }
+}

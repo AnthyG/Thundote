@@ -52,7 +52,7 @@ var Home = {
                 <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
                 <div class="empty-action">
                     <button class="btn btn-primary" v-on:click.prevent="addNote">Add note</button>
-                    <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show checked' : 'Hide checked' }}</button>
+                    <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
                 </div>
             </div>
             <note-list v-if="this.noteList !== null"
