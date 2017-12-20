@@ -48,6 +48,7 @@ Vue.component("navbar", {
                     <a class="off-canvas-toggle btn btn-link btn-action" href="#sidebar-left" v-on:click.prevent="toggleLeftSidebar">
                         <i class="icon icon-menu"></i>
                     </a>
+                    <span>{{ this.userInfo || isLoggedIn }}</span>
                     <!--
                     <ul class="tab">
                         <li class="tab-item active" v-on:click.prevent="goto('Home')">Home</li>

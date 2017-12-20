@@ -34,7 +34,7 @@
                 ["cert_user_id", "TEXT"]
             ],
             "indexes": ["CREATE UNIQUE INDEX path ON json(directory, file_name)"],
-            "schema_changed": 2
+            "schema_changed": 3
         },
         "notes": {
             "cols": [
@@ -44,11 +44,10 @@
                 ["body", "TEXT"],
                 ["lastedited", "INTEGER"],
                 ["encrypted", "BOOLEAN"],
-                ["lasteditedenc", "INTEGER"],
                 ["json_id", "INTEGER REFERENCES json (json_id)"]
             ],
             "indexes": ["CREATE UNIQUE INDEX note_key ON notes(json_id, uuid)"],
-            "schema_changed": 3
+            "schema_changed": 5
         },
         "shared": {
             "cols": [

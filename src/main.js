@@ -136,7 +136,8 @@ app = new Vue({
     el: '#app',
     template: `
         <div class="off-canvas">
-            <navbar v-on:toggleLeftSidebar="toggleLeftSidebar" v-on:logIn="logIn" v-on:logOut="logOut" v-bind:user-info="userInfo"
+            <navbar v-on:toggleLeftSidebar="toggleLeftSidebar" v-on:logIn="logIn" v-on:logOut="logOut"
+            v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
             v-on:setSearch="setSearch"></navbar>
             <div id="sidebar-left" v-bind:class="'app-sidebar off-canvas-sidebar ' + (leftSidebarShown ? 'active' : '')">
                 <div class="app-brand">
@@ -152,8 +153,10 @@ app = new Vue({
             <div class="off-canvas-content" style="padding-left: .4rem;">
                 <div class="container grid-lg">
                     <component ref="view" v-bind:is="currentView"
+                    v-on:getUserInfo="getUserInfo"
+                    v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
                     v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
-                    v-bind:getNoteList="getNoteList" v-bind:noteList="noteList" v-bind:searchFor="searchFor"></component>
+                    v-bind:getNoteList="getNoteList" v-bind:noteList="p_noteList" v-bind:searchFor="searchFor"></component>
                 </div>
             </div>
         </div>
@@ -165,8 +168,9 @@ app = new Vue({
         siteInfo: null,
         userInfo: null,
         leftSidebarShown: false,
-        noteList: null,
-        noteListP: null,
+        noteList: [],
+        noteListL: [],
+        p_noteList: null,
         searchFor: ''
     },
     computed: {
@@ -186,10 +190,23 @@ app = new Vue({
             if (this.siteInfo == null) {
                 return;
             }
-            page.selectUser();
+
+            var dis = this;
+
+            page.selectUser(function() {
+                console.log("Logged in", dis);
+                dis.getUserInfo();
+                dis.goto('/app');
+            });
         },
         logOut: function() {
-            page.signOut();
+            var dis = this;
+
+            page.signOut(function() {
+                console.log("Logged out", dis);
+                dis.getUserInfo();
+                dis.goto('');
+            });
         },
         goto: function(to) {
             this.leftSidebarShown = false;
@@ -206,6 +223,8 @@ app = new Vue({
                 return;
             }
 
+            console.log("Getting user-info");
+
             var dis = this;
 
             page.cmd("dbQuery", [
@@ -218,96 +237,198 @@ app = new Vue({
                 dis.userInfo = {
                     public_key: user.public_key,
                     cert_user_id: dis.siteInfo.cert_user_id,
-                    auth_address: user.auth_address
+                    auth_address: dis.siteInfo.auth_address
                 };
 
                 console.log("Got user-info", res, user, dis.siteInfo, dis.userInfo);
+
+                dis.goto('/app');
             });
         },
-        getNoteList: function() {
+        getNoteList: function(l) {
             // console.log(this);
             // if (!this.computed.isLoggedIn()) return false;
 
-            this.noteList = [];
-            // this.addNote();
+            var lists = ["l", "c"];
 
-            console.log("Got noteList", this.noteList);
+            var dis = this;
+
+            if (lists.indexOf(l) === -1) l = "l";
+
+            var decryptor = function(data, cb) {
+                var decryptList = [];
+
+                var dnl = data.length;
+
+                for (var x = 0; x < dnl; x++) {
+                    var y = data[x];
+
+                    decryptList.push(y.title);
+                    decryptList.push(y.body);
+                    decryptList.push(y.todoCheck);
+                    decryptList.push(y.lastedited);
+                }
+
+                page.cmd("eciesDecrypt", [
+                    decryptList
+                ], (res) => {
+                    // console.log("Decrypted local note-stuff", res);
+
+                    var c_noteList = [];
+
+                    for (var x = 0; x < dnl * 4; x += 4) {
+                        var y = data[x / 4];
+
+                        // console.log("Reading local notes", x, x / 4, y);
+
+                        c_noteList[x / 4] = {};
+
+                        c_noteList[x / 4].uuid = y.uuid;
+                        c_noteList[x / 4].title = res[x];
+                        c_noteList[x / 4].body = res[x + 1];
+                        c_noteList[x / 4].todoCheck = res[x + 2] === "true" ? true : false;
+                        c_noteList[x / 4].lastedited = res[x + 3];
+                        c_noteList[x / 4].encrypted = y.encrypted;
+                    }
+
+                    console.log("Got noteList", c_noteList);
+
+                    typeof cb === "function" && cb(c_noteList);
+                });
+            };
+
+            if (l === "c") {
+                page.cmd("dbQuery", [
+                    "SELECT notes.json_id, notes.uuid, notes.title, notes.body, notes.lastedited, notes.encrypted," +
+                    " extra_data.auth_address, extra_data.public_key" +
+                    " FROM notes" +
+                    " JOIN extra_data USING (json_id)" +
+                    " WHERE auth_address = '" + app.userInfo.auth_address + "'"
+                ], (notes) => {
+                    if (notes) {
+                        decryptor(notes, function(c_noteList) {
+                            dis.noteList = c_noteList;
+                            dis.p_noteList = c_noteList;
+                        });
+                    }
+                });
+            } else if (l === "l") {
+                var data2_inner_path = "data/users/" + this.siteInfo.auth_address + "/data_private.json";
+                page.cmd("fileGet", {
+                    "inner_path": data2_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    if (data) {
+                        decryptor(data.local_notes, function(c_noteList) {
+                            dis.noteListL = c_noteList;
+                            dis.p_noteList = c_noteList;
+                        });
+                    }
+                });
+            }
         },
-        addNote: function(note, key) {
+        addNote: function(note, sync, key) {
             // if (!note.title || !note.body) return false;
-            var note = note || {};
-
-            var key = key || "";
-
-            var nNote = {
+            var note = note || {
                 "uuid": generateUUID(),
-                "title": note.title || generateUUID(),
-                "body": note.body || generateUUID(),
-                "todoCheck": note.todoCheck || false,
+                "title": generateUUID(),
+                "body": generateUUID(),
+                "todoCheck": false,
                 "lasteditedenc": "",
                 "lastedited": moment().format("x"),
                 "encrypted": (key ? true : false)
             };
 
-            this.noteList.push(nNote);
+            var sync = sync === true ? true : false;
 
-            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json"
-            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json"
-            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json"
+            var key = typeof key === "string" ? key : "";
 
-            var writeBlaTo = function(to, bla) {
-                var ip = to === 1 ? data2_inner_path : (to === 2 ? content_inner_path : data_inner_path);
+            var nNote = {
+                "uuid": note.uuid,
+                "title": "",
+                "body": "",
+                "todoCheck": "",
+                "lastedited": "",
+                "encrypted": note.encrypted
+            };
 
-                console.log("Adding note 2", to, ip, bla);
+            if (sync)
+                this.noteList.push(note);
+            else
+                this.noteListL.push(note);
 
-                // Encode data array to utf8 json text
-                var json_raw = unescape(encodeURIComponent(JSON.stringify(bla, undefined, '\t')));
-                var json_rawA = btoa(json_raw);
+            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
+            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
+            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json";
 
-                page.cmd("fileWrite", [
-                    ip,
-                    json_rawA
-                ], (res) => {
-                    if (res == "ok") {
-                        page.verifyUserFiles(null, function() {
-                            console.log("Added note", nNote);
+            var encryptor = function(cb1, cb2) {
+                var cb1 = typeof cb1 === "function" ? cb1 : undefined;
+                var cb2 = typeof cb2 === "function" ? cb2 : cb1;
+
+                encrypt(note.title, 0, "", "", function(res1) {
+                    nNote.title = res1;
+                    encrypt(note.body, 0, "", "", function(res2) {
+                        nNote.body = res2;
+                        encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
+                            nNote.todoCheck = res3;
+                            encrypt(note.lastedited, 0, "", "", function(res4) {
+                                nNote.lastedited = res4;
+
+                                if (note.encrypted) {
+                                    encrypt(nNote.title, 1, key, "", function(res1_) {
+                                        nNote.title = res1_;
+                                        encrypt(nNote.body, 1, key, "", function(res2_) {
+                                            nNote.body = res2_;
+                                            encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
+                                                nNote.todoCheck = res3_;
+                                                encrypt(nNote.lastedited, 1, key, "", function(res4_) {
+                                                    nNote.lastedited = res4_;
+
+                                                    cb2();
+                                                });
+                                            });
+                                        });
+                                    });
+                                } else {
+                                    cb1();
+                                }
+                            });
                         });
-                    } else {
-                        page.cmd("wrapperNotification", [
-                            "error", "File write error: " + JSON.stringify(res5)
-                        ]);
-                    }
+                    });
                 });
             };
 
-            page.cmd("fileGet", {
-                "inner_path": data2_inner_path,
-                "required": false
-            }, (data) => {
-                var data = data ? JSON.parse(data) : {};
+            if (sync) {
+                page.cmd("fileGet", {
+                    "inner_path": data_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
 
-                console.log("Adding note", data);
+                    console.log("Adding synced note", data);
 
-                page.cmd("eciesEncrypt", [
-                    JSON.stringify(nNote)
-                ], (res1) => {
-                    if (nNote.encrypted) {
-                        var bR = btoa(key);
-
-                        page.cmd("aesEncrypt", [
-                            res1,
-                            bR,
-                            bR
-                        ], (res2) => {
-                            data.local_notes.push(res2);
-                            writeBlaTo(1, data);
-                        });
-                    } else {
-                        data.local_notes.push(res1);
-                        writeBlaTo(1, data);
-                    }
+                    encryptor(function() {
+                        data.notes.push(nNote);
+                        writeBlaTo(0, data);
+                    });
                 });
-            });
+            } else {
+                page.cmd("fileGet", {
+                    "inner_path": data2_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Adding local note", data);
+
+                    encryptor(function() {
+                        data.local_notes.push(nNote);
+                        writeBlaTo(1, data);
+                    });
+                });
+            }
         },
         todoToggle: function(note, to) {
             var uuid = note.uuid;
@@ -366,8 +487,11 @@ app = new Vue({
 
 
 class Page extends ZeroFrame {
-    verifyUserFiles(cb1, cb2) {
-        console.log("Verifying User Files...");
+    verifyUserFiles(cb1, cb2, forcesign) {
+        var forcesign = forcesign ? true : false;
+        console.log("Verifying User Files...", forcesign);
+
+        if (!page.site_info.cert_user_id) return false;
 
         var data_inner_path = "data/users/" + page.site_info.auth_address + "/data.json";
         var data2_inner_path = "data/users/" + page.site_info.auth_address + "/data_private.json";
@@ -380,13 +504,13 @@ class Page extends ZeroFrame {
                 "inner_path": data2_inner_path,
                 "required": false
             }, (data) => {
-                console.log("BEFORE 1", JSON.parse(JSON.stringify(data)));
+                // console.log("BEFORE 1", JSON.parse(JSON.stringify(data)));
                 if (data)
                     var data = JSON.parse(data);
                 else
                     var data = {};
                 var olddata = JSON.parse(JSON.stringify(data));
-                console.log("BEFORE 2", JSON.parse(JSON.stringify(olddata)));
+                // console.log("BEFORE 2", JSON.parse(JSON.stringify(olddata)));
 
                 if (data.pversion !== curpversion)
                     data = {
@@ -501,14 +625,17 @@ class Page extends ZeroFrame {
                 var olddata2 = JSON.parse(JSON.stringify(data2));
 
                 var curoptional = ""; // ".+\\.(png|jpg|jpeg|gif|mp3|ogg|mp4)"
-                var curignore = "(?!(data(?:_private)?.json))"; // "(?!(.+\\.(png|jpg|jpeg|gif|mp3|ogg|mp4)|data.json))"
+                var curignore = "(data(?:_private)?.json)"; // "(?!(.+\\.(png|jpg|jpeg|gif|mp3|ogg|mp4)|data.json))"
                 if (!data2.hasOwnProperty("optional") || data2.optional !== curoptional)
                     data2.optional = curoptional;
                 if (!data2.hasOwnProperty("ignore") || data2.ignore !== curignore)
                     data2.ignore = curignore;
+                if (!data2.hasOwnProperty("inner_path") || data2.inner_path !== content_inner_path) {
+                    data2.inner_path = content_inner_path;
+                }
                 console.log("VERIFIED content.json", olddata2, data2);
 
-                if (JSON.stringify(data2) !== JSON.stringify(olddata2) || JSON.stringify(data) !== JSON.stringify(olddata)) {
+                if (JSON.stringify(data2) !== JSON.stringify(olddata2) || JSON.stringify(data) !== JSON.stringify(olddata) || forcesign) {
                     console.log("content.json HAS RECEIVED A UPDATE!");
 
                     var json_raw2 = unescape(encodeURIComponent(JSON.stringify(data2, undefined, '\t')));
@@ -546,7 +673,7 @@ class Page extends ZeroFrame {
         verifyData2(cb1, cb2);
     }
 
-    selectUser(cb = null) {
+    selectUser(cb) {
         this.cmd("certSelect", {
             accepted_domains: [
                 "zeroid.bit",
@@ -559,7 +686,7 @@ class Page extends ZeroFrame {
         return false;
     }
 
-    signOut(cb = null) {
+    signOut(cb) {
         this.cmd("certSelect", {
             accepted_domains: [""]
         }, () => {
@@ -593,7 +720,7 @@ class Page extends ZeroFrame {
             page.site_info = site_info;
             app.siteInfo = site_info;
 
-            page.verifyUserFiles();
+            page.verifyUserFiles(undefined, undefined, true);
 
             // if (site_info.cert_user_id) {
             app.getUserInfo();
@@ -603,17 +730,73 @@ class Page extends ZeroFrame {
             page.cmd("serverInfo", [], (res) => {
                 app.serverInfo = res;
             });
+
+            var Home = require("./router_pages/home.js");
+            // var Landing = require("./router_pages/landing.js");
+
+            VueZeroFrameRouter.VueZeroFrameRouter_Init(Router, app, [
+                { route: "app", component: Home },
+                { route: "", component: Home }
+            ]);
             // }
         });
     }
 }
 page = new Page();
 
-var Home = require("./router_pages/home.js");
+var writeBlaTo = function(to, bla) {
+    var data_inner_path = "data/users/" + app.siteInfo.auth_address + "/data.json";
+    var data2_inner_path = "data/users/" + app.siteInfo.auth_address + "/data_private.json";
+    var content_inner_path = "data/users/" + app.siteInfo.auth_address + "/content.json";
 
-VueZeroFrameRouter.VueZeroFrameRouter_Init(Router, app, [
-    { route: "", component: Home }
-]);
+    var ip = to === 1 ? data2_inner_path : (to === 2 ? content_inner_path : data_inner_path);
+
+    console.log("Writing", to, ip, bla);
+
+    // Encode data array to utf8 json text
+    var json_raw = unescape(encodeURIComponent(JSON.stringify(bla, undefined, '\t')));
+    var json_rawA = btoa(json_raw);
+
+    page.cmd("fileWrite", [
+        ip,
+        json_rawA
+    ], (res) => {
+        if (res == "ok") {
+            page.verifyUserFiles(null, function() {
+                console.log("Wrote", to, ip, bla);
+            });
+        } else {
+            page.cmd("wrapperNotification", [
+                "error", "File write error: " + JSON.stringify(res)
+            ]);
+        }
+    });
+};
+
+var encrypt = function(text, mode, key, iv, cb) {
+    var mode = mode || 0;
+
+    var key = key || "";
+    var iv = iv || key || "";
+
+    if (mode === 1 && key && iv) {
+        var bR1 = btoa(key);
+        var bR2 = btoa(iv);
+        page.cmd("aesEncrypt", [
+            text,
+            bR1,
+            bR2
+        ], (res) => {
+            typeof cb === "function" && cb(res, text, mode, key, iv, bR1, bR2);
+        })
+    } else if (mode === 0) {
+        page.cmd("eciesEncrypt", [
+            text
+        ], (res) => {
+            typeof cb === "function" && cb(res, text, mode, key, iv);
+        });
+    } else return false;
+};
 
 function showError(msg) {
     page.cmd("wrapperNotification", [

@@ -3,8 +3,20 @@ var Router = require("../router.js");
 
 var Home = {
     beforeMount: function() {
+        /* if (this.siteInfo == null || this.siteInfo.cert_user_id == null) {
+            Router.navigate('');
+            console.log("Redirected to LP", this.siteInfo);
+            // return;
+        } else {
+            Router.navigate('/app');
+            this.getNoteList();
+            console.log(this.noteList, this.noteList !== null, this.searchFor);
+        }
+
+        console.log("Loaded App (home)", this.siteInfo); */
+
         this.getNoteList();
-        console.log("Loaded home");
+        console.log("Loaded App (home)", this.siteInfo);
         console.log(this.noteList, this.noteList !== null, this.searchFor);
     },
     props: {
