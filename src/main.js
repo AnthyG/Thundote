@@ -194,16 +194,27 @@ app = new Vue({
             var dis = this;
 
             page.selectUser(function() {
-                console.log("Logged in", dis);
-                dis.getUserInfo();
-                dis.goto('/app');
+                console.log("User selected; Logging in..");
+                page.verifyUserFiles(undefined, function() {
+                    console.log("Logged in");
+
+                    dis.getUserInfo();
+                    dis.goto('/app');
+
+                    dis.getNoteList();
+                });
             });
         },
         logOut: function() {
             var dis = this;
 
             page.signOut(function() {
-                console.log("Logged out", dis);
+                dis.noteList = [];
+                dis.noteListL = [];
+                dis.p_noteList = [];
+
+                console.log("Logged out");
+
                 dis.getUserInfo();
                 dis.goto('');
             });
@@ -223,9 +234,16 @@ app = new Vue({
                 return;
             }
 
-            console.log("Getting user-info");
+            console.log("Getting user-info", JSON.parse(JSON.stringify(this.siteInfo)));
 
             var dis = this;
+
+            dis.userInfo = {
+                json_id: null,
+                public_key: null,
+                cert_user_id: dis.siteInfo.cert_user_id,
+                auth_address: dis.siteInfo.auth_address
+            };
 
             page.cmd("dbQuery", [
                 "SELECT * FROM extra_data LEFT JOIN json USING (json_id) WHERE auth_address = '" + dis.siteInfo.auth_address + "'"
@@ -235,6 +253,7 @@ app = new Vue({
                 var user = res[0];
 
                 dis.userInfo = {
+                    json_id: user.json_id,
                     public_key: user.public_key,
                     cert_user_id: dis.siteInfo.cert_user_id,
                     auth_address: dis.siteInfo.auth_address
@@ -247,7 +266,7 @@ app = new Vue({
         },
         getNoteList: function(l) {
             // console.log(this);
-            // if (!this.computed.isLoggedIn()) return false;
+            if (!this.isLoggedIn) return false;
 
             var lists = ["l", "c"];
 
