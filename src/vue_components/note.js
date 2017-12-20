@@ -13,12 +13,15 @@ Vue.component("note-card", {
     computed: {},
     methods: {
         todoToggle: function() {
+            console.log("Todo-Toggle", this.note);
             this.$emit('todoToggle', this.note);
         },
         editNote: function() {
+            console.log("Edit note", this.note);
             this.$emit('editNote', this.note);
         },
         deleteNote: function() {
+            console.log("Delete note", this.note);
             this.$emit('deleteNote', this.note);
         },
         moment: moment2

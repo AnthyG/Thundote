@@ -23,6 +23,7 @@ var Home = {
         userInfo: Object,
         siteInfo: Object,
         getNoteList: Function,
+        getList: String,
         noteList: {
             type: Array,
             default: function() {
@@ -40,6 +41,11 @@ var Home = {
         isLoggedIn: function() {
             if (this.userInfo == null) return false;
             return this.userInfo.cert_user_id != null;
+        },
+        curList: function() {
+            var lists = ["l", "c"];
+            var listsn = ["local", "synced"];
+            return listsn[lists.indexOf(this.getList)];
         }
     },
     methods: {
@@ -57,8 +63,9 @@ var Home = {
             console.log("Searching", s);
             this.$emit('setSearch', s);
         },
-        addNote: function() {
-            this.$emit('addNote');
+        addNote: function(e, note, sync, key) {
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            this.$emit('addNote', note, sync, key);
         },
         todoToggle: function(note) {
             this.$emit('todoToggle', note);
@@ -71,6 +78,9 @@ var Home = {
         },
         toggleHideChecked: function(to) {
             this.hideChecked = typeof to === "boolean" ? to : !this.hideChecked;
+        },
+        setGetList: function(to) {
+            this.$emit('setGetList', to);
         }
     },
     template: `
@@ -80,9 +90,10 @@ var Home = {
                     <div class="empty-icon">
                         <i class="mdi">note</i>
                     </div>
-                    <p class="empty-title h5">You have {{ noteList !== null ? noteList.length : 'no' }} notes</p>
+                    <p class="empty-title h5">You have {{ noteList !== null ? noteList.length : 'no' }} {{ curList }} notes</p>
                     <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
                     <div class="empty-action">
+                        <button class="btn btn-primary" v-on:click.prevent="setGetList(true)">Change note-list</button>
                         <button class="btn btn-primary" v-on:click.prevent="addNote">Add note</button>
                         <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
                     </div>

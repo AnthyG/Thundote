@@ -156,7 +156,7 @@ app = new Vue({
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
                     v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
-                    v-bind:getNoteList="getNoteList" v-bind:noteList="p_noteList"
+                    v-on:setGetList="setGetList" v-bind:getNoteList="getNoteList" v-bind:getList="getList" v-bind:noteList="p_noteList"
                     v-on:setSearch="setSearch" v-bind:searchFor="searchFor"></component>
                 </div>
             </div>
@@ -169,6 +169,7 @@ app = new Vue({
         siteInfo: null,
         userInfo: null,
         leftSidebarShown: false,
+        getList: "l",
         noteList: [],
         noteListL: [],
         p_noteList: null,
@@ -210,6 +211,7 @@ app = new Vue({
             var dis = this;
 
             page.signOut(function() {
+                dis.getList = "l";
                 dis.noteList = [];
                 dis.noteListL = [];
                 dis.p_noteList = [];
@@ -265,15 +267,32 @@ app = new Vue({
                 dis.goto('/app');
             });
         },
+        setGetList: function(to) {
+            var lists = ["l", "c"];
+
+            if (to === true) {
+                var ni = lists.indexOf(this.getList) + 1;
+                ni = ni < lists.length ? ni : 0;
+                var to = lists[ni];
+            } else if (lists.indexOf(to) === -1) to = "l";
+
+            this.getList = to;
+            this.getNoteList(to);
+        },
         getNoteList: function(l) {
             // console.log(this);
+
+            this.noteList = [];
+            this.noteListL = [];
+            this.p_noteList = null;
+
             if (!this.isLoggedIn) return false;
 
             var lists = ["l", "c"];
 
             var dis = this;
 
-            if (lists.indexOf(l) === -1) l = "l";
+            var l = lists.indexOf(l) !== -1 ? l : (lists.indexOf(this.getList) !== -1 ? this.getList : "l");
 
             var decryptor = function(data, cb) {
                 var decryptList = [];
@@ -319,7 +338,8 @@ app = new Vue({
 
             if (l === "c") {
                 page.cmd("dbQuery", [
-                    "SELECT notes.json_id, notes.uuid, notes.title, notes.body, notes.lastedited, notes.encrypted," +
+                    "SELECT notes.json_id," +
+                    " notes.uuid, notes.title, notes.body, notes.todoCheck, notes.lastedited, notes.encrypted," +
                     " extra_data.auth_address, extra_data.public_key" +
                     " FROM notes" +
                     " JOIN extra_data USING (json_id)" +
@@ -327,6 +347,7 @@ app = new Vue({
                 ], (notes) => {
                     if (notes) {
                         decryptor(notes, function(c_noteList) {
+                            dis.getList = "c";
                             dis.noteList = c_noteList;
                             dis.p_noteList = c_noteList;
                         });
@@ -342,6 +363,7 @@ app = new Vue({
 
                     if (data) {
                         decryptor(data.local_notes, function(c_noteList) {
+                            dis.getList = "l";
                             dis.noteListL = c_noteList;
                             dis.p_noteList = c_noteList;
                         });
@@ -351,6 +373,7 @@ app = new Vue({
         },
         addNote: function(note, sync, key) {
             // if (!note.title || !note.body) return false;
+            console.log("Adding note..", note, sync, key);
             var note = note || {
                 "uuid": generateUUID(),
                 "title": generateUUID(),
@@ -361,7 +384,7 @@ app = new Vue({
                 "encrypted": (key ? true : false)
             };
 
-            var sync = sync === true ? true : false;
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
 
             var key = typeof key === "string" ? key : "";
 
@@ -383,43 +406,6 @@ app = new Vue({
             var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
             var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json";
 
-            var encryptor = function(cb1, cb2) {
-                var cb1 = typeof cb1 === "function" ? cb1 : undefined;
-                var cb2 = typeof cb2 === "function" ? cb2 : cb1;
-
-                encrypt(note.title, 0, "", "", function(res1) {
-                    nNote.title = res1;
-                    encrypt(note.body, 0, "", "", function(res2) {
-                        nNote.body = res2;
-                        encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
-                            nNote.todoCheck = res3;
-                            encrypt(note.lastedited, 0, "", "", function(res4) {
-                                nNote.lastedited = res4;
-
-                                if (note.encrypted) {
-                                    encrypt(nNote.title, 1, key, "", function(res1_) {
-                                        nNote.title = res1_;
-                                        encrypt(nNote.body, 1, key, "", function(res2_) {
-                                            nNote.body = res2_;
-                                            encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
-                                                nNote.todoCheck = res3_;
-                                                encrypt(nNote.lastedited, 1, key, "", function(res4_) {
-                                                    nNote.lastedited = res4_;
-
-                                                    cb2();
-                                                });
-                                            });
-                                        });
-                                    });
-                                } else {
-                                    cb1();
-                                }
-                            });
-                        });
-                    });
-                });
-            };
-
             if (sync) {
                 page.cmd("fileGet", {
                     "inner_path": data_inner_path,
@@ -429,8 +415,8 @@ app = new Vue({
 
                     console.log("Adding synced note", data);
 
-                    encryptor(function() {
-                        data.notes.push(nNote);
+                    encryptor(note, nNote, function(nNote_) {
+                        data.notes.push(nNote_);
                         writeBlaTo(0, data);
                     });
                 });
@@ -443,8 +429,8 @@ app = new Vue({
 
                     console.log("Adding local note", data);
 
-                    encryptor(function() {
-                        data.local_notes.push(nNote);
+                    encryptor(note, nNote, function(nNote_) {
+                        data.local_notes.push(nNote_);
                         writeBlaTo(1, data);
                     });
                 });
@@ -454,42 +440,89 @@ app = new Vue({
             var uuid = note.uuid;
             var nid;
 
-            var editableNotes = this.noteList.filter(function(a, b) {
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+
+            var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
                 return a.uuid === uuid;
             });
             if (editableNotes.length !== 1) return false;
+            var nNote = editableNotes[0];
 
-            editableNotes[0].todoCheck = (typeof to === "boolean" ? to : !editableNotes[0].todoCheck);
+            nNote.todoCheck = (typeof to === "boolean" ? to : !nNote.todoCheck);
 
-            this.noteList[nid] = editableNotes[0];
+            this.editNote(nNote);
+            // this.p_noteList[nid] = nNote;
 
-            console.log("Toggled todo-state of note", uuid, editableNotes[0].todoCheck);
+            console.log("Toggled todo-state of note", uuid, nNote.todoCheck);
         },
         editNote: function(note) {
             var uuid = note.uuid;
             var nid;
 
-            var editableNotes = this.noteList.filter(function(a, b) {
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+
+            var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
                 return a.uuid === uuid;
             });
             if (editableNotes.length !== 1) return false;
+            var nNote = editableNotes[0];
 
-            for (var x in editableNotes[0]) {
-                if (note.hasOwnProperty(x)) {
-                    editableNotes[0][x] = note[x];
+            for (var x in nNote) {
+                if (note.hasOwnProperty(x) && typeof nNote[x] === typeof note[x]) {
+                    nNote[x] = note[x];
                 }
             }
-            editableNotes[0].lastedited = moment().format("x");
+            nNote.lastedited = moment().format("x");
 
-            this.noteList[nid] = editableNotes[0];
+            // this.p_noteList[nid] = JSON.parse(JSON.stringify(nNote));
+
+            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
+            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
+            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json";
+
+            var dis = this;
+
+            if (sync) {
+                page.cmd("fileGet", {
+                    "inner_path": data_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Editing synced note", data, nid, JSON.parse(JSON.stringify(nNote)));
+
+                    encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
+                        data.notes[nid] = nNote_;
+                        writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
+                            // dis.getNoteList("c");
+                        });
+                    });
+                });
+            } else {
+                page.cmd("fileGet", {
+                    "inner_path": data2_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Editing local note", data, nid, JSON.parse(JSON.stringify(nNote)));
+
+                    encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
+                        data.local_notes[nid] = nNote_;
+                        writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
+                            // dis.getNoteList("l");
+                        });
+                    });
+                });
+            }
         },
         deleteNote: function(note) {
             var uuid = note.uuid;
             var nid = null;
 
-            var editableNotes = this.noteList.filter(function(a, b) {
+            var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
                 return a.uuid === uuid;
             });
@@ -497,7 +530,7 @@ app = new Vue({
             console.log(nid, editableNotes);
 
             if (nid !== null) {
-                this.noteList.splice(nid, 1);
+                this.p_noteList.splice(nid, 1);
                 console.log("Deleted note", nid, uuid);
             }
         }
@@ -764,7 +797,7 @@ class Page extends ZeroFrame {
 }
 page = new Page();
 
-var writeBlaTo = function(to, bla) {
+var writeBlaTo = function(to, bla, cb1, cb2) {
     var data_inner_path = "data/users/" + app.siteInfo.auth_address + "/data.json";
     var data2_inner_path = "data/users/" + app.siteInfo.auth_address + "/data_private.json";
     var content_inner_path = "data/users/" + app.siteInfo.auth_address + "/content.json";
@@ -782,13 +815,19 @@ var writeBlaTo = function(to, bla) {
         json_rawA
     ], (res) => {
         if (res == "ok") {
-            page.verifyUserFiles(null, function() {
+            var cbf = function() {
                 console.log("Wrote", to, ip, bla);
-            });
+                typeof cb1 === "function" && cb1(res, to, ip, bla);
+            }
+            if (to === 1)
+                page.verifyUserFiles(null, cbf);
+            else
+                page.verifyUserFiles(cbf, null);
         } else {
             page.cmd("wrapperNotification", [
                 "error", "File write error: " + JSON.stringify(res)
             ]);
+            typeof cb2 === "function" && cb2(res, to, ip, bla);
         }
     });
 };
@@ -816,6 +855,43 @@ var encrypt = function(text, mode, key, iv, cb) {
             typeof cb === "function" && cb(res, text, mode, key, iv);
         });
     } else return false;
+};
+
+var encryptor = function(note, nNote, cb1, key, cb2) {
+    var cb1 = typeof cb1 === "function" ? cb1 : undefined;
+    var cb2 = typeof cb2 === "function" ? cb2 : cb1;
+
+    encrypt(note.title, 0, "", "", function(res1) {
+        nNote.title = res1;
+        encrypt(note.body, 0, "", "", function(res2) {
+            nNote.body = res2;
+            encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
+                nNote.todoCheck = res3;
+                encrypt(note.lastedited, 0, "", "", function(res4) {
+                    nNote.lastedited = res4;
+
+                    if (note.encrypted) {
+                        encrypt(nNote.title, 1, key, "", function(res1_) {
+                            nNote.title = res1_;
+                            encrypt(nNote.body, 1, key, "", function(res2_) {
+                                nNote.body = res2_;
+                                encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
+                                    nNote.todoCheck = res3_;
+                                    encrypt(nNote.lastedited, 1, key, "", function(res4_) {
+                                        nNote.lastedited = res4_;
+
+                                        cb2(nNote, note);
+                                    });
+                                });
+                            });
+                        });
+                    } else {
+                        cb1(nNote, note);
+                    }
+                });
+            });
+        });
+    });
 };
 
 function showError(msg) {

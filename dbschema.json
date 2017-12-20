@@ -42,12 +42,13 @@
                 ["uuid", "TEXT UNIQUE"],
                 ["title", "TEXT"],
                 ["body", "TEXT"],
-                ["lastedited", "INTEGER"],
+                ["todoCheck", "TEXT"],
+                ["lastedited", "TEXT"],
                 ["encrypted", "BOOLEAN"],
                 ["json_id", "INTEGER REFERENCES json (json_id)"]
             ],
             "indexes": ["CREATE UNIQUE INDEX note_key ON notes(json_id, uuid)"],
-            "schema_changed": 6
+            "schema_changed": 7
         },
         "shared": {
             "cols": [
