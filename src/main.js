@@ -153,10 +153,11 @@ app = new Vue({
             <div class="off-canvas-content" style="padding-left: .4rem;">
                 <div class="container grid-lg">
                     <component ref="view" v-bind:is="currentView"
-                    v-on:getUserInfo="getUserInfo"
+                    v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
                     v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
-                    v-bind:getNoteList="getNoteList" v-bind:noteList="p_noteList" v-bind:searchFor="searchFor"></component>
+                    v-bind:getNoteList="getNoteList" v-bind:noteList="p_noteList"
+                    v-on:setSearch="setSearch" v-bind:searchFor="searchFor"></component>
                 </div>
             </div>
         </div>

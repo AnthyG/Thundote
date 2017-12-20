@@ -3,23 +3,25 @@ var Router = require("../router.js");
 
 var Home = {
     beforeMount: function() {
-        /* if (this.siteInfo == null || this.siteInfo.cert_user_id == null) {
+        // this.$emit('getUserInfo');
+        if (this.userInfo == null || this.userInfo.cert_user_id == null) {
             Router.navigate('');
-            console.log("Redirected to LP", this.siteInfo);
-            // return;
+            console.log("Redirected to LP", this.userInfo);
         } else {
             Router.navigate('/app');
             this.getNoteList();
             console.log(this.noteList, this.noteList !== null, this.searchFor);
         }
 
-        console.log("Loaded App (home)", this.siteInfo); */
+        console.log("Loaded App (home)", this.userInfo);
 
-        this.getNoteList();
-        console.log("Loaded App (home)", this.siteInfo);
-        console.log(this.noteList, this.noteList !== null, this.searchFor);
+        // this.getNoteList();
+        // console.log("Loaded App (home)", this.userInfo);
+        // console.log(this.noteList, this.noteList !== null, this.searchFor);
     },
     props: {
+        userInfo: Object,
+        siteInfo: Object,
         getNoteList: Function,
         noteList: {
             type: Array,
@@ -34,9 +36,26 @@ var Home = {
             hideChecked: false
         }
     },
+    computed: {
+        isLoggedIn: function() {
+            if (this.userInfo == null) return false;
+            return this.userInfo.cert_user_id != null;
+        }
+    },
     methods: {
+        logIn: function() {
+            this.$emit('logIn');
+        },
+        logOut: function() {
+            this.$emit('logOut');
+        },
         goto: function(to) {
             Router.navigate(to);
+        },
+        setSearch: function(s) {
+            this.searchFor = s;
+            console.log("Searching", s);
+            this.$emit('setSearch', s);
         },
         addNote: function() {
             this.$emit('addNote');
@@ -56,20 +75,26 @@ var Home = {
     },
     template: `
         <div>
-            <div class="empty">
-                <div class="empty-icon">
-                    <i class="mdi">note</i>
+            <div v-if="isLoggedIn">
+                <div class="empty">
+                    <div class="empty-icon">
+                        <i class="mdi">note</i>
+                    </div>
+                    <p class="empty-title h5">You have {{ noteList !== null ? noteList.length : 'no' }} notes</p>
+                    <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
+                    <div class="empty-action">
+                        <button class="btn btn-primary" v-on:click.prevent="addNote">Add note</button>
+                        <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
+                    </div>
                 </div>
-                <p class="empty-title h5">You have {{ this.noteList !== null ? this.noteList.length : 'no' }} notes</p>
-                <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
-                <div class="empty-action">
-                    <button class="btn btn-primary" v-on:click.prevent="addNote">Add note</button>
-                    <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
-                </div>
+                <note-list v-if="noteList !== null"
+                v-bind:noteList="noteList" v-bind:hideChecked="hideChecked" v-bind:searchFor="searchFor"
+                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"></note-list>
             </div>
-            <note-list v-if="this.noteList !== null"
-            v-bind:noteList="this.noteList" v-bind:hideChecked="hideChecked" v-bind:searchFor="this.searchFor"
-            v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"></note-list>
+            <div v-else>
+                <h1>Thundote</h1>
+                <h4>Please <a href="#" v-on:click.prevent="logIn">log in</a> to use Thundote!</h4>
+            </div>
         </div>
     `
 };

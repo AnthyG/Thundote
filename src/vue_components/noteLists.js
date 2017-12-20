@@ -67,7 +67,7 @@ Vue.component('note-list', {
     },
     template: `
         <div v-if="noteList !== null" class="container">
-            <div class="columns" v-for="(note, i) in this.p_noteList">
+            <div class="columns" v-for="(note, i) in p_noteList">
                 <note-card class="col-12 light" v-bind:index="i" v-bind:key="note.uuid" v-bind:noteData="note"
                 v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"></note-card>
             </div>

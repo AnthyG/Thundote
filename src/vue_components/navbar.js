@@ -51,7 +51,7 @@ Vue.component("navbar", {
                 </section>
                 <section class="navbar-center">
                     <div class="input-group input-inline">
-                        <input class="form-input" type="text" placeholder="search" v-bind:value="this.searchFor"
+                        <input class="form-input" type="text" placeholder="search" v-bind:value="searchFor"
                         v-on:input="setSearch($event.target.value)">
                         <button class="btn btn-link btn-action input-group-btn"><i class="icon icon-search"></i></button>
                     </div>
