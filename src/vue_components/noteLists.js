@@ -18,7 +18,8 @@ Vue.component('note-list', {
             default: function() {
                 return [];
             }
-        }
+        },
+        colors: Array
     },
     data: function() {
         return {
@@ -33,8 +34,11 @@ Vue.component('note-list', {
         }
     },
     methods: {
-        todoToggle: function(note) {
-            this.$emit('todoToggle', note);
+        todoToggle: function(note, to) {
+            this.$emit('todoToggle', note, to);
+        },
+        colorChange: function(note, to) {
+            this.$emit('colorChange', note, to);
         },
         editNote: function(note) {
             this.$emit('editNote', note);
@@ -47,8 +51,11 @@ Vue.component('note-list', {
     template: `
         <div v-if="noteList !== null" class="container">
             <div class="columns" v-for="(note, i) in r_noteList">
-                <note-card class="col-12 light" v-bind:index="i" v-bind:key="note.uuid" v-bind:noteData="note"
-                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"></note-card>
+                <note-card class="col-12"
+                v-bind:index="i" v-bind:key="note.uuid" v-bind:noteData="note" 
+                v-bind:colors="colors"
+                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+                v-on:deleteNote="deleteNote"></note-card>
             </div>
         </div>
     `

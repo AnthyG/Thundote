@@ -85,3 +85,62 @@ body {
         }
     }
 }
+
+@import "../../node_modules/sass-material-colors/sass/sass-material-colors-classes";
+@import "../../node_modules/sass-material-colors/sass/sass-material-colors-map";
+@each $color-name,
+$color-variants in $material-colors {
+    @each $color-variant,
+    $hex-value in $color-variants {
+        .btn-link.color-#{$color-name}-#{$color-variant} {
+            color: #{$hex-value};
+            &:focus,
+            &:hover,
+            &:active,
+            &.active {
+                color: darken($hex-value, 5%);
+            }
+        }
+        .color-i-#{$color-name}-#{$color-variant} {
+            color: #{$hex-value} !important;
+        }
+        .btn-link.bg-color-#{$color-name}-#{$color-variant} {
+            background: #{$hex-value};
+            border-color: transparent;
+        }
+        .bg-color-i-#{$color-name}-#{$color-variant} {
+            background-color: #{$hex-value} !important;
+        }
+    }
+}
+
+.bg-color-black {
+    color: #000000;
+}
+
+.color-black {
+    color: #000000;
+}
+
+.bg-color-white {
+    color: #FFFFFF;
+}
+
+.color-white {
+    color: #FFFFFF;
+}
+
+.btn-link {
+    &.bg-color-black {
+        color: #000000;
+    }
+    &.color-black {
+        color: #000000;
+    }
+    &.bg-color-white {
+        color: #FFFFFF;
+    }
+    &.color-white {
+        color: #FFFFFF;
+    }
+}

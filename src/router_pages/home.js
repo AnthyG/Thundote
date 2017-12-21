@@ -25,7 +25,8 @@ var Home = {
                 return [];
             }
         },
-        searchFor: String
+        searchFor: String,
+        colors: Array
     },
     data: function() {
         return {
@@ -85,8 +86,11 @@ var Home = {
             var sync = sync === true ? true : (this.getList === "c" ? true : false);
             this.$emit('addNote', note, sync, key);
         },
-        todoToggle: function(note) {
-            this.$emit('todoToggle', note);
+        todoToggle: function(note, to) {
+            this.$emit('todoToggle', note, to);
+        },
+        colorChange: function(note, to) {
+            this.$emit('colorChange', note, to);
         },
         editNote: function(note) {
             this.$emit('editNote', note);
@@ -123,7 +127,9 @@ var Home = {
                 </div>
                 <note-list v-if="p_noteList !== null"
                 v-bind:noteList="p_noteList" v-bind:hideChecked="hideChecked" v-bind:searchFor="searchFor"
-                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"></note-list>
+                v-bind:colors="colors"
+                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+                v-on:deleteNote="deleteNote"></note-list>
             </div>
             <div v-else>
                 <h1>Thundote</h1>

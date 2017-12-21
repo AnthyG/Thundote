@@ -85,3 +85,4 @@ gulp.task("scripts", function() {
 });
 
 gulp.task("default", ["fontcss", "fonts", "scripts", "styles", "styles2", "html", "watch"]);
+gulp.task("build", ["fontcss", "fonts", "scripts", "styles", "styles2", "html"]);

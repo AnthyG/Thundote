@@ -155,7 +155,11 @@ app = new Vue({
                     <component ref="view" v-bind:is="currentView"
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
-                    v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
+
+                    v-on:addNote="addNote" v-bind:colors="colors"
+                    v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+                    v-on:deleteNote="deleteNote"
+
                     v-on:setGetList="setGetList" v-on:getNoteList="getNoteList" v-bind:getList="getList" v-bind:noteList="p_noteList"
                     v-on:setSearch="setSearch" v-bind:searchFor="searchFor"></component>
                 </div>
@@ -179,6 +183,21 @@ app = new Vue({
         isLoggedIn: function() {
             if (this.userInfo == null) return false;
             return this.userInfo.cert_user_id != null;
+        },
+        colors: function() {
+            var colors = ["grey-100"];
+
+            var colornames = ["red", "pink", "purple", "deep-purple", "indigo", "blue", "light-blue", "cyan", "teal", "green", "light-green", "lime", "yellow", "amber", "orange", "deep-orange"];
+            var suffix = "-a100";
+
+            for (var x = 0; x < colornames.length; x++) {
+                var y = colornames[x];
+                colors.push(y + suffix);
+            }
+
+            colors.push("blue-grey-100", "brown-100");
+
+            return colors;
         }
     },
     methods: {
@@ -322,8 +341,11 @@ app = new Vue({
                     decryptList.push(y.title);
                     decryptList.push(y.body);
                     decryptList.push(y.todoCheck);
+                    decryptList.push(y.color);
                     decryptList.push(y.lastedited);
                 }
+
+                var dnlT = 5;
 
                 page.cmd("eciesDecrypt", [
                     decryptList
@@ -332,19 +354,20 @@ app = new Vue({
 
                     var c_noteList = [];
 
-                    for (var x = 0; x < dnl * 4; x += 4) {
-                        var y = data[x / 4];
+                    for (var x = 0; x < dnl * dnlT; x += dnlT) {
+                        var y = data[x / dnlT];
 
                         // console.log("Reading local notes", x, x / 4, y);
 
-                        c_noteList[x / 4] = {};
+                        c_noteList[x / dnlT] = {};
 
-                        c_noteList[x / 4].uuid = y.uuid;
-                        c_noteList[x / 4].title = res[x];
-                        c_noteList[x / 4].body = res[x + 1];
-                        c_noteList[x / 4].todoCheck = res[x + 2] === "true" ? true : false;
-                        c_noteList[x / 4].lastedited = res[x + 3];
-                        c_noteList[x / 4].encrypted = y.encrypted;
+                        c_noteList[x / dnlT].uuid = y.uuid;
+                        c_noteList[x / dnlT].title = res[x];
+                        c_noteList[x / dnlT].body = res[x + 1];
+                        c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false;
+                        c_noteList[x / dnlT].color = res[x + 3];
+                        c_noteList[x / dnlT].lastedited = res[x + 4];
+                        c_noteList[x / dnlT].encrypted = y.encrypted;
                     }
 
                     console.log("Got noteList", c_noteList);
@@ -356,7 +379,7 @@ app = new Vue({
             if (l === "c") {
                 page.cmd("dbQuery", [
                     "SELECT notes.json_id," +
-                    " notes.uuid, notes.title, notes.body, notes.todoCheck, notes.lastedited, notes.encrypted," +
+                    " notes.uuid, notes.title, notes.body, notes.todoCheck, notes.color, notes.lastedited, notes.encrypted," +
                     " extra_data.auth_address, extra_data.public_key" +
                     " FROM notes" +
                     " JOIN extra_data USING (json_id)" +
@@ -398,17 +421,10 @@ app = new Vue({
                 "title": "",
                 "body": "",
                 "todoCheck": false,
+                "color": "grey-100",
                 "lastedited": moment().format("x"),
                 "encrypted": (key ? true : false)
             };
-            /* {
-                "uuid": generateUUID(),
-                "title": generateUUID(),
-                "body": generateUUID(),
-                "todoCheck": false,
-                "lastedited": moment().format("x"),
-                "encrypted": (key ? true : false)
-            }; */
 
             var sync = sync === true ? true : (this.getList === "c" ? true : false);
 
@@ -419,6 +435,7 @@ app = new Vue({
                 "title": "",
                 "body": "",
                 "todoCheck": "",
+                "color": "",
                 "lastedited": "",
                 "encrypted": note.encrypted
             };
@@ -486,6 +503,29 @@ app = new Vue({
 
             console.log("Toggled todo-state of note", uuid, nNote.todoCheck);
         },
+        colorChange: function(note, to) {
+            if (!this.isLoggedIn) return false;
+
+            if (this.colors.indexOf(to) === -1) return false;
+
+            var uuid = note.uuid;
+            var nid;
+
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+
+            var editableNotes = this.p_noteList.filter(function(a, b) {
+                nid = a.uuid === uuid ? b : nid;
+                return a.uuid === uuid;
+            });
+            if (editableNotes.length !== 1) return false;
+            var nNote = editableNotes[0];
+
+            nNote.color = to;
+
+            this.editNote(nNote);
+
+            console.log("Changed color of note", uuid, nNote.color);
+        },
         editNote: function(note) {
             if (!this.isLoggedIn) return false;
 
@@ -501,8 +541,18 @@ app = new Vue({
             if (editableNotes.length !== 1) return false;
             var nNote = editableNotes[0];
 
+            var tNote = {
+                "uuid": "",
+                "title": "",
+                "body": "",
+                "todoCheck": false,
+                "color": "",
+                "lastedited": 0,
+                "encrypted": false
+            };
+
             for (var x in nNote) {
-                if (note.hasOwnProperty(x) && typeof nNote[x] === typeof note[x]) {
+                if (note.hasOwnProperty(x) && typeof tNote[x] === typeof note[x]) {
                     nNote[x] = note[x];
                 }
             }
@@ -935,37 +985,70 @@ var encryptor = function(note, nNote, cb1, key, cb2) {
     var cb1 = typeof cb1 === "function" ? cb1 : undefined;
     var cb2 = typeof cb2 === "function" ? cb2 : cb1;
 
-    encrypt(note.title, 0, "", "", function(res1) {
-        nNote.title = res1;
-        encrypt(note.body, 0, "", "", function(res2) {
-            nNote.body = res2;
-            encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
-                nNote.todoCheck = res3;
-                encrypt(note.lastedited, 0, "", "", function(res4) {
-                    nNote.lastedited = res4;
+    var these = ["title", "body", "todoCheck", "color", "lastedited"];
+    var thesetS = [false, false, true, false, false];
 
-                    if (note.encrypted) {
-                        encrypt(nNote.title, 1, key, "", function(res1_) {
-                            nNote.title = res1_;
-                            encrypt(nNote.body, 1, key, "", function(res2_) {
-                                nNote.body = res2_;
-                                encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
-                                    nNote.todoCheck = res3_;
-                                    encrypt(nNote.lastedited, 1, key, "", function(res4_) {
-                                        nNote.lastedited = res4_;
+    var genEncryptorStr = function(x) {
+        var encryptorStr_ = ``;
 
-                                        cb2(nNote, note);
-                                    });
-                                });
-                            });
-                        });
-                    } else {
-                        cb1(nNote, note);
-                    }
-                });
-            });
-        });
-    });
+        var x = x + 1;
+        var y = these[x];
+
+        encryptorStr_ += `
+            encrypt(note_['` + y + `']` + (thesetS[x] ? `.toString()` : ``) +
+            `, 0, "", "", function(res` + x + `) {
+                nNote_['` + y + `'] = res` + x + `;
+                `;
+
+        if (x < these.length - 1)
+            encryptorStr_ += genEncryptorStr(x);
+
+        if (x === these.length - 1)
+            encryptorStr_ += `
+                // console.log("Encryptor encrypted!", nNote_, note_);
+                cb1_(nNote_, note_);`;
+
+        encryptorStr_ += `
+            });`;
+
+        return encryptorStr_;
+    };
+
+    var encryptorStr = `(function(note_, nNote_, cb1_, key_, cb2_) {` + genEncryptorStr(-1) + `})(note, nNote, cb1, key, cb2);`;
+    // console.log("Encryptor Str", encryptorStr);
+    eval(encryptorStr);
+
+    // encrypt(note.title, 0, "", "", function(res1) {
+    //     nNote.title = res1;
+    //     encrypt(note.body, 0, "", "", function(res2) {
+    //         nNote.body = res2;
+    //         encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
+    //             nNote.todoCheck = res3;
+    //             encrypt(note.lastedited, 0, "", "", function(res4) {
+    //                 nNote.lastedited = res4;
+
+    //                 if (note.encrypted) {
+    //                     encrypt(nNote.title, 1, key, "", function(res1_) {
+    //                         nNote.title = res1_;
+    //                         encrypt(nNote.body, 1, key, "", function(res2_) {
+    //                             nNote.body = res2_;
+    //                             encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
+    //                                 nNote.todoCheck = res3_;
+    //                                 encrypt(nNote.lastedited, 1, key, "", function(res4_) {
+    //                                     nNote.lastedited = res4_;
+
+    //                                     cb2(nNote, note);
+    //                                 });
+    //                             });
+    //                         });
+    //                     });
+    //                 } else {
+    //                     cb1(nNote, note);
+    //                 }
+    //             });
+    //         });
+    //     });
+    // });
 };
 
 function showError(msg) {
