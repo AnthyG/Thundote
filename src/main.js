@@ -200,10 +200,15 @@ app = new Vue({
                 page.verifyUserFiles(undefined, function() {
                     console.log("Logged in");
 
+                    dis.getList = "l";
+                    dis.noteList = null;
+                    dis.noteListL = null;
+                    dis.p_noteList = null;
+
                     dis.getUserInfo();
                     dis.goto('/app');
 
-                    dis.getNoteList();
+                    dis.getNoteList(dis.getList, true);
                 });
             });
         },
@@ -212,9 +217,9 @@ app = new Vue({
 
             page.signOut(function() {
                 dis.getList = "l";
-                dis.noteList = [];
-                dis.noteListL = [];
-                dis.p_noteList = [];
+                dis.noteList = null;
+                dis.noteListL = null;
+                dis.p_noteList = null;
 
                 console.log("Logged out");
 
