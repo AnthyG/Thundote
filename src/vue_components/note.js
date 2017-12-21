@@ -34,7 +34,7 @@ Vue.component("note-card", {
         moment: moment2
     },
     template: `
-        <div class="card light">
+        <div class="card">
             <div class="card-header">
                 <button class="btn btn-action btn-link btn-sm float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
                     <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
