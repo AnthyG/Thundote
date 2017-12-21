@@ -9,20 +9,15 @@ var Home = {
             console.log("Redirected to LP", this.userInfo);
         } else {
             Router.navigate('/app');
-            this.getNoteList();
+            this.$emit('getNoteList');
             console.log(this.noteList, this.noteList !== null, this.searchFor);
         }
 
         console.log("Loaded App (home)", this.userInfo);
-
-        // this.getNoteList();
-        // console.log("Loaded App (home)", this.userInfo);
-        // console.log(this.noteList, this.noteList !== null, this.searchFor);
     },
     props: {
         userInfo: Object,
         siteInfo: Object,
-        getNoteList: Function,
         getList: String,
         noteList: {
             type: Array,
@@ -79,8 +74,8 @@ var Home = {
         toggleHideChecked: function(to) {
             this.hideChecked = typeof to === "boolean" ? to : !this.hideChecked;
         },
-        setGetList: function(to) {
-            this.$emit('setGetList', to);
+        setGetList: function(to, forceget) {
+            this.$emit('setGetList', to, forceget);
         }
     },
     template: `
@@ -88,11 +83,12 @@ var Home = {
             <div v-if="isLoggedIn">
                 <div class="empty">
                     <div class="empty-icon">
-                        <i class="mdi">note</i>
+                        <i class="mdi">{{ this.getList === 'c' ? 'cloud' : 'cloud_off' }}</i>
                     </div>
                     <p class="empty-title h5">You have {{ noteList !== null ? noteList.length : 'no' }} {{ curList }} notes</p>
                     <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
                     <div class="empty-action">
+                        <button class="btn btn-primary btn-action" v-on:click.prevent="setGetList(getList, true)"><i class="mdi">refresh</i></button>
                         <button class="btn btn-primary" v-on:click.prevent="setGetList(true)">Change note-list</button>
                         <button class="btn btn-primary" v-on:click.prevent="addNote">Add note</button>
                         <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>

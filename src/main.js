@@ -156,7 +156,7 @@ app = new Vue({
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
                     v-on:addNote="addNote" v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:deleteNote="deleteNote"
-                    v-on:setGetList="setGetList" v-bind:getNoteList="getNoteList" v-bind:getList="getList" v-bind:noteList="p_noteList"
+                    v-on:setGetList="setGetList" v-on:getNoteList="getNoteList" v-bind:getList="getList" v-bind:noteList="p_noteList"
                     v-on:setSearch="setSearch" v-bind:searchFor="searchFor"></component>
                 </div>
             </div>
@@ -170,8 +170,8 @@ app = new Vue({
         userInfo: null,
         leftSidebarShown: false,
         getList: "l",
-        noteList: [],
-        noteListL: [],
+        noteList: null,
+        noteListL: null,
         p_noteList: null,
         searchFor: ''
     },
@@ -267,7 +267,11 @@ app = new Vue({
                 dis.goto('/app');
             });
         },
-        setGetList: function(to) {
+        setGetList: function(to, forceget) {
+            if (!this.isLoggedIn) return false;
+
+            var forceget = forceget === true ? true : false;
+
             var lists = ["l", "c"];
 
             if (to === true) {
@@ -277,22 +281,29 @@ app = new Vue({
             } else if (lists.indexOf(to) === -1) to = "l";
 
             this.getList = to;
-            this.getNoteList(to);
+            this.getNoteList(to, forceget);
         },
-        getNoteList: function(l) {
-            // console.log(this);
-
-            this.noteList = [];
-            this.noteListL = [];
-            this.p_noteList = null;
-
+        getNoteList: function(l, forceget) {
             if (!this.isLoggedIn) return false;
 
             var lists = ["l", "c"];
 
-            var dis = this;
-
             var l = lists.indexOf(l) !== -1 ? l : (lists.indexOf(this.getList) !== -1 ? this.getList : "l");
+
+            var forceget = forceget === true ? true : false;
+            var ncl = l === "c" ? this.noteList : this.noteListL;
+            console.log("Getting noteList", forceget, l, ncl);
+            if (!forceget && ncl !== null) {
+                this.getList = l;
+                this.p_noteList = ncl;
+                return false;
+            }
+
+            // this.noteList = null;
+            // this.noteListL = null;
+            this.p_noteList = null;
+
+            var dis = this;
 
             var decryptor = function(data, cb) {
                 var decryptList = [];
@@ -372,6 +383,8 @@ app = new Vue({
             }
         },
         addNote: function(note, sync, key) {
+            if (!this.isLoggedIn) return false;
+
             // if (!note.title || !note.body) return false;
             console.log("Adding note..", note, sync, key);
             var note = note || {
@@ -437,6 +450,8 @@ app = new Vue({
             }
         },
         todoToggle: function(note, to) {
+            if (!this.isLoggedIn) return false;
+
             var uuid = note.uuid;
             var nid;
 
@@ -457,6 +472,8 @@ app = new Vue({
             console.log("Toggled todo-state of note", uuid, nNote.todoCheck);
         },
         editNote: function(note) {
+            if (!this.isLoggedIn) return false;
+
             var uuid = note.uuid;
             var nid;
 
@@ -519,19 +536,60 @@ app = new Vue({
             }
         },
         deleteNote: function(note) {
+            if (!this.isLoggedIn) return false;
+
             var uuid = note.uuid;
             var nid = null;
+
+            var sync = sync === true ? true : (this.getList === "c" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
                 return a.uuid === uuid;
             });
+            if (editableNotes.length !== 1) return false;
 
-            console.log(nid, editableNotes);
+            // console.log("Deleting note..", note, nid, editableNotes);
 
-            if (nid !== null) {
-                this.p_noteList.splice(nid, 1);
-                console.log("Deleted note", nid, uuid);
+            if (sync)
+                this.noteList.splice(nid, 1);
+            else
+                this.noteListL.splice(nid, 1);
+
+            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
+            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
+            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json";
+
+            var dis = this;
+
+            if (sync) {
+                page.cmd("fileGet", {
+                    "inner_path": data_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Deleting synced note", data, nid, JSON.parse(JSON.stringify(note)));
+
+                    data.notes.splice(nid, 1);
+                    writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
+                        // dis.getNoteList("c");
+                    });
+                });
+            } else {
+                page.cmd("fileGet", {
+                    "inner_path": data2_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Deleting local note", data, nid, JSON.parse(JSON.stringify(note)));
+
+                    data.local_notes.splice(nid, 1);
+                    writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
+                        // dis.getNoteList("l");
+                    });
+                });
             }
         }
     }

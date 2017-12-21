@@ -40,7 +40,7 @@ Vue.component("note-card", {
             </div>
             <div class="card-footer">
                 <button class="btn btn-primary">Share</button>
-                <button class="btn btn-link">Encrypt</button>
+                <button class="btn btn-link"><i class="mdi">lock_outline</i></button>
                 <button class="btn btn-action btn-warning float-right tooltip tooltip-bottom" data-tooltip="Delete" v-on:click.prevent="deleteNote"><i class="icon icon-delete"></i></button>
             </div>
         </div>
