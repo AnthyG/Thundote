@@ -264,7 +264,8 @@ app = new Vue({
 
                 console.log("Got user-info", res, user, dis.siteInfo, dis.userInfo);
 
-                dis.goto('/app');
+                if (Router.currentRoute === "")
+                    dis.goto('/app');
             });
         },
         setGetList: function(to, forceget) {
@@ -389,13 +390,20 @@ app = new Vue({
             console.log("Adding note..", note, sync, key);
             var note = note || {
                 "uuid": generateUUID(),
-                "title": generateUUID(),
-                "body": generateUUID(),
+                "title": "",
+                "body": "",
                 "todoCheck": false,
-                "lasteditedenc": "",
                 "lastedited": moment().format("x"),
                 "encrypted": (key ? true : false)
             };
+            /* {
+                "uuid": generateUUID(),
+                "title": generateUUID(),
+                "body": generateUUID(),
+                "todoCheck": false,
+                "lastedited": moment().format("x"),
+                "encrypted": (key ? true : false)
+            }; */
 
             var sync = sync === true ? true : (this.getList === "c" ? true : false);
 
@@ -414,6 +422,8 @@ app = new Vue({
                 this.noteList.push(note);
             else
                 this.noteListL.push(note);
+
+            this.goto('/note/' + note.uuid);
 
             var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
             var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
@@ -843,9 +853,10 @@ class Page extends ZeroFrame {
             });
 
             var Home = require("./router_pages/home.js");
-            // var Landing = require("./router_pages/landing.js");
+            var Note = require("./router_pages/note.js");
 
             VueZeroFrameRouter.VueZeroFrameRouter_Init(Router, app, [
+                { route: "note/:uuid", component: Note },
                 { route: "app", component: Home },
                 { route: "", component: Home }
             ]);
