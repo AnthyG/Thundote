@@ -43,10 +43,10 @@ Vue.component("note-card", {
                 <button class="btn btn-action btn-link color-grey-900 btn-sm float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
                     <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
                 </button>
-                <div v-bind:class="'card-title h5 ' + (note.todoCheck ? 'text-gray' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
-                <div class="card-subtitle text-gray">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
+                <div v-bind:class="'card-title h5 ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
+                <div class="card-subtitle color-grey-600">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
             </div>
-            <div v-bind:class="'card-body ' + (note.todoCheck ? 'text-gray' : '')" v-on:click.prevent="openEditor">
+            <div v-bind:class="'card-body ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">
                 {{ note.body }}
             </div>
             <div class="card-footer">

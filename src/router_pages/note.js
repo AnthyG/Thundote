@@ -93,7 +93,7 @@ var Note = {
                             </button>
                         </div>
                     </div>
-                    <div class="modal-subtitle text-gray">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
+                    <div class="modal-subtitle color-grey-600">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
                 </div>
                 <div class="modal-body" style="height: 50vh;">
                     <div class="content" style="height: 100%;">
