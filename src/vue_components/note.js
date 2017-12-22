@@ -1,8 +1,6 @@
 var Vue = require("vue/dist/vue.min.js");
 var Router = require("../router.js");
 
-var moment2 = require("moment");
-
 Vue.component("note-card", {
     props: ["cert_user_id", "noteData", "colors"],
     data: function() {
@@ -34,22 +32,21 @@ Vue.component("note-card", {
         deleteNote: function() {
             console.log("Delete note", this.note);
             this.$emit('deleteNote', this.note);
-        },
-        moment: moment2
+        }
     },
     template: `
-        <div v-bind:class="'card color-grey-800 bg-color-' + (note.color ? note.color : 'grey-100')">
+        <div v-bind:class="'card color-grey-800 bg-color-' + (note.color ? note.color : 'grey-100')" v-bind:data-ticked="note.todoCheck ? 'true' : 'false'">
             <div class="card-header">
                 <button class="btn btn-action btn-link color-grey-900 btn-sm float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
                     <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
                 </button>
-                <div v-bind:class="'card-title h5 ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
-                <div class="card-subtitle color-grey-600">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
+                <div v-bind:class="'card-title h5 text-break text-ellipsis ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
+                <div class="card-subtitle color-grey-600" v-on:click.prevent="openEditor">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
             </div>
-            <div v-bind:class="'card-body text-break ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">
-                {{ note.body }}
-            </div>
-            <div class="card-footer">
+            <div v-bind:class="'card-body text-break text-ellipsis ' + (note.todoCheck ? 'color-grey-600' : '')"
+            style="white-space: pre-line;"
+            v-on:click.prevent="openEditor">{{ note.body }}</div>
+            <div v-bind:class="'card-footer bg-color-' + (note.color ? note.color : 'grey-100')">
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Share"><i class="mdi">share</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor"><i class="mdi" v-on:click.prevent="openEditor">mode_edit</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Encrypt"><i class="mdi">lock_outline</i></button>

@@ -11,11 +11,11 @@ require("./vue_components/navbar.js");
 require("./vue_components/note.js");
 require("./vue_components/noteLists.js");
 
-var autosize = require("autosize");
-var marked = require("marked");
-var moment = require("moment");
-var pnglib = require("pnglib");
-var svg4everybody = require("svg4everybody");
+autosize = require("autosize");
+marked = require("marked");
+moment = require("moment");
+pnglib = require("pnglib");
+svg4everybody = require("svg4everybody");
 
 function d2h(d) {
     return d.toString(16);
@@ -151,7 +151,7 @@ app = new Vue({
             <a class="off-canvas-overlay" href="#close" v-on:click.prevent="toggleLeftSidebar(false)"></a>
         
             <div class="off-canvas-content" style="padding-left: .4rem;">
-                <div class="container grid-xl">
+                <div class="#container #grid-xl">
                     <component ref="view" v-bind:is="currentView"
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
