@@ -67,38 +67,12 @@ Vue.component('note-list', {
         p_noteList: function() {
             var dis = this;
 
-            // var filterF = function(itemEl) {
-            //     var a = {
-            //         todoCheck: itemEl.getAttribute('data-ticked') === "true" ? true : false,
-            //         body: itemEl.querySelector('.card-body').innerText,
-            //         title: itemEl.querySelector('.card-title').innerText
-            //     };
-
-            //     if (dis.hideChecked && a.todoCheck) {
-            //         return false;
-            //     }
-
-            //     if (dis.searchFor) {
-            //         var s = new RegExp(dis.searchFor, "mi");
-
-            //         if (!s.test(a.body) && !s.test(a.title)) {
-            //             return false;
-            //         }
-            //     }
-
-            //     return true;
-            // };
-
             this.$nextTick(function() {
                 dis.iso.layout();
 
                 dis.iso.reloadItems();
-                dis.iso.arrange({
-                    // filter: filterF
-                });
+                dis.iso.arrange({});
             });
-
-            // console.log("Filtering notes", this.hideChecked, this.searchFor);
 
             return this.r_noteList;
         }
