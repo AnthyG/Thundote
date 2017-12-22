@@ -144,3 +144,48 @@ $color-variants in $material-colors {
         color: #FFFFFF;
     }
 }
+
+$s: 240px;
+.grid {
+    max-width: $s * 6;
+    width: 100%;
+    margin: 0 auto;
+    margin-top: .4rem;
+}
+
+.grid-item {
+    float: left;
+    // width: 16.66666667%;
+    width: 240px;
+    position: relative;
+    max-height: calc(100px * 5);
+    .card-body {
+        // min-height: 68px;
+        max-height: calc(500px - 94px - 70px);
+    }
+}
+
+@for $i from 1 through 3 {
+    @media (min-width: $s * $i + 20px) {
+        .grid {
+            width: $s * $i;
+        }
+    }
+}
+
+@for $i from 4 through 7 {
+    @media (min-width: $s * $i + 20px) {
+        .grid {
+            width: $s * ($i - 1);
+        }
+    }
+}
+
+@media (max-width: $s * 2.5) {
+    .grid {
+        width: 100%;
+    }
+    .grid-item {
+        width: 100%;
+    }
+}

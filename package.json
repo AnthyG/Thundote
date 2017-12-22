@@ -40,6 +40,9 @@
     },
     "dependencies": {
         "autosize": "^4.0.0",
+        "isotope-fit-columns": "^1.1.3",
+        "isotope-layout": "^3.0.4",
+        "isotope-packery": "^2.0.0",
         "marked": "^0.3.7",
         "moment": "^2.20.0",
         "pnglib": "0.0.1",

@@ -1,8 +1,6 @@
 var Vue = require("vue/dist/vue.min.js");
 var Router = require("../router.js");
 
-var moment2 = require("moment");
-
 var Note = {
     beforeMount: function() {
         this.$emit('getNoteList');
@@ -74,8 +72,7 @@ var Note = {
         deleteNote: function() {
             this.$emit('deleteNote', this.note);
             this.goto('/app');
-        },
-        moment: moment2
+        }
     },
     template: `
         <div class="modal-lg modal active">

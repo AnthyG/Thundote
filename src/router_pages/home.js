@@ -55,7 +55,7 @@ var Home = {
                     }
 
                     if (dis.searchFor) {
-                        var s = new RegExp(dis.searchFor, "m");
+                        var s = new RegExp(dis.searchFor, "mi");
 
                         if (!s.test(a.body) && !s.test(a.title)) {
                             return false;
@@ -125,7 +125,7 @@ var Home = {
                     </div>
                     <!--<h5 v-if="searchFor"><br>{{ p_noteList.length }} search-results for <mark>{{ searchFor }}</mark></h5>-->
                 </div>
-                <note-list v-if="p_noteList !== null"
+                <note-list v-if="p_noteList !== null && p_noteList.length > 0"
                 v-bind:noteList="p_noteList" v-bind:hideChecked="hideChecked" v-bind:searchFor="searchFor"
                 v-bind:colors="colors"
                 v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
