@@ -37,16 +37,16 @@ Vue.component("note-card", {
     template: `
         <div v-bind:class="'card color-grey-800 bg-color-' + (note.color ? note.color : 'grey-100')" v-bind:data-ticked="note.todoCheck ? 'true' : 'false'">
             <div class="card-header">
-                <button class="btn btn-action btn-link color-grey-900 btn-sm float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
+                <button class="btn btn-action btn-link color-grey-900 btn-sm nohoverhide float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
                     <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
                 </button>
                 <div v-bind:class="'card-title h5 text-break text-ellipsis ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
-                <div class="card-subtitle color-grey-600" v-on:click.prevent="openEditor">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
+                <small class="card-subtitle color-grey-600 nohoverhide" v-on:click.prevent="openEditor">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</small>
             </div>
             <div v-bind:class="'card-body text-break text-ellipsis ' + (note.todoCheck ? 'color-grey-600' : '')"
             style="white-space: pre-line;"
             v-on:click.prevent="openEditor">{{ note.body }}</div>
-            <div v-bind:class="'card-footer bg-color-' + (note.color ? note.color : 'grey-100')">
+            <div v-bind:class="'card-footer nohoverhide bg-color-' + (note.color ? note.color : 'grey-100')">
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Share"><i class="mdi">share</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor"><i class="mdi" v-on:click.prevent="openEditor">mode_edit</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Encrypt"><i class="mdi">lock_outline</i></button>

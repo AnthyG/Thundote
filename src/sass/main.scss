@@ -23,6 +23,11 @@
     font-feature-settings: 'liga';
 }
 
+// Component transition
+@mixin control-transition() {
+    transition: all .2s ease;
+}
+
 body {
     padding-top: 2.4rem;
 }
@@ -162,6 +167,15 @@ $s: 240px;
     .card-body {
         // min-height: 68px;
         max-height: calc(500px - 94px - 70px);
+    }
+    .nohoverhide {
+        opacity: 0;
+        @include control-transition();
+    }
+    &:hover {
+        .nohoverhide {
+            opacity: 1;
+        }
     }
 }
 
