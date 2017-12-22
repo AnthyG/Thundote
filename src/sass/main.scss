@@ -144,3 +144,8 @@ $color-variants in $material-colors {
         color: #FFFFFF;
     }
 }
+
+.grid-item {
+    max-width: 100%;
+    float: left;
+}

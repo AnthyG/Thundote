@@ -46,7 +46,7 @@ Vue.component("note-card", {
                 <div v-bind:class="'card-title h5 ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">{{ note.title }}</div>
                 <div class="card-subtitle color-grey-600">{{ moment(note.lastedited, "x").format("MMMM Do, YYYY - HH:mm:ss") }}</div>
             </div>
-            <div v-bind:class="'card-body ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">
+            <div v-bind:class="'card-body text-break ' + (note.todoCheck ? 'color-grey-600' : '')" v-on:click.prevent="openEditor">
                 {{ note.body }}
             </div>
             <div class="card-footer">

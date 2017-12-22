@@ -151,7 +151,7 @@ app = new Vue({
             <a class="off-canvas-overlay" href="#close" v-on:click.prevent="toggleLeftSidebar(false)"></a>
         
             <div class="off-canvas-content" style="padding-left: .4rem;">
-                <div class="container grid-lg">
+                <div class="container grid-xl">
                     <component ref="view" v-bind:is="currentView"
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"

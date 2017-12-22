@@ -1,9 +1,31 @@
 var Vue = require("vue/dist/vue.min.js");
 var Router = require("../router.js");
 
+var Isotope = require("isotope-layout");
+require("isotope-fit-columns");
+require("isotope-packery");
+
 var moment2 = require("moment");
 
 Vue.component('note-list', {
+    mounted: function() {
+        var dis = this;
+
+        this.$nextTick(function() {
+            var grid = document.querySelector('.grid');
+
+            var iso = new Isotope('.grid', {
+                itemSelector: '.grid-item',
+                layoutMode: 'packery',
+                packery: {
+                    gutter: 5,
+                },
+                percentPosition: true
+            });
+
+            console.log("Binding Masonry", dis, dis.$el, grid, iso);
+        });
+    },
     props: {
         hideChecked: {
             type: Boolean,
@@ -49,14 +71,12 @@ Vue.component('note-list', {
         moment: moment2
     },
     template: `
-        <div v-if="noteList !== null" class="container">
-            <div class="columns" v-for="(note, i) in r_noteList">
-                <note-card class="col-12"
-                v-bind:index="i" v-bind:key="note.uuid" v-bind:noteData="note" 
-                v-bind:colors="colors"
-                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
-                v-on:deleteNote="deleteNote"></note-card>
-            </div>
+        <div v-if="noteList !== null" class="container grid">
+            <note-card v-bind:class="'grid-item'" v-for="(note, i) in r_noteList"
+            v-bind:index="i" v-bind:key="note.uuid" v-bind:noteData="note" 
+            v-bind:colors="colors"
+            v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+            v-on:deleteNote="deleteNote"></note-card>
         </div>
     `
 });
