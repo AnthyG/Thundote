@@ -48,7 +48,7 @@ Vue.component("note-card", {
             v-on:click.prevent="openEditor">{{ note.body }}</div>
             <div v-bind:class="'card-footer nohoverhide bg-color-' + (note.color ? note.color : 'grey-100')">
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Share"><i class="mdi">share</i></button>
-                <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor"><i class="mdi" v-on:click.prevent="openEditor">mode_edit</i></button>
+                <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor" v-on:click.prevent="openEditor"><i class="mdi">mode_edit</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Encrypt"><i class="mdi">lock_outline</i></button>
                 <div class="popover">
                     <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Color"><i class="mdi">color_lens</i></button>

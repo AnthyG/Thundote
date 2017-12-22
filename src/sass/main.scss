@@ -166,6 +166,7 @@ $s: 240px;
     max-height: calc(100px * 5);
     .card-body {
         // min-height: 68px;
+        overflow-y: auto;
         max-height: calc(500px - 94px - 70px);
     }
     .nohoverhide {
@@ -201,5 +202,9 @@ $s: 240px;
     }
     .grid-item {
         width: 100%;
+        max-height: initial;
+        .card-body {
+            max-height: initial;
+        }
     }
 }
