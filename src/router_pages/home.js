@@ -128,6 +128,7 @@ var Home = {
         },
         addNote: function(e, note, sync, key) {
             var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            // var key = key != "" ? key : (this.addNoteKey != "" ? this.addNoteKey : undefined);
             this.$emit('addNote', note, sync, key);
         },
         todoToggle: function(note, to) {

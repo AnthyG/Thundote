@@ -3,5 +3,7 @@ node_modules/
 /css/
 /index.html
 
+disabled/
+
 /data/
 /content.json

@@ -47,9 +47,7 @@ Vue.component("note-card", {
             style="white-space: pre-line;"
             v-on:click.prevent="openEditor">{{ note.body }}</div>
             <div v-bind:class="'card-footer nohoverhide bg-color-' + (note.color ? note.color : 'grey-100')">
-                <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Share"><i class="mdi">share</i></button>
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor" v-on:click.prevent="openEditor"><i class="mdi">mode_edit</i></button>
-                <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Encrypt"><i class="mdi">lock_outline</i></button>
                 <div class="popover">
                     <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Color"><i class="mdi">color_lens</i></button>
                     <div class="popover-container">
@@ -63,14 +61,19 @@ Vue.component("note-card", {
                         </div>
                     </div>
                 </div>
-                <!--<div class="dropdown">
+                <div class="dropdown">
                     <a href="#" class="btn btn-link color-grey-900 dropdown-toggle" tabindex="0">
                         <i class="mdi">more_vert</i>
                     </a>
-                    <ul class="menu">
-                        <li class="menu-item"></li>
+                    <ul class="menu text-light">
+                        <li class="menu-item">
+                            <a href="#" v-on:click.prevent="">Share</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#" v-on:click.prevent="">Encrypt</a>
+                        </li>
                     </ul>
-                </div>-->
+                </div>
                 <button class="btn btn-action btn-link color-grey-900 float-right tooltip tooltip-bottom" data-tooltip="Delete" v-on:click.prevent="deleteNote"><i class="mdi">delete_forever</i></button>
             </div>
         </div>

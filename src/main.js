@@ -424,6 +424,9 @@ app = new Vue({
                 for (var x = 0; x < dnl; x++) {
                     var y = data[x];
 
+                    if (typeof y.todoCheck === "boolean")
+                        continue;
+
                     decryptList.push(y.title);
                     decryptList.push(y.body);
                     decryptList.push(y.todoCheck);
@@ -448,15 +451,69 @@ app = new Vue({
                         c_noteList[x / dnlT] = {};
 
                         c_noteList[x / dnlT].uuid = y.uuid;
-                        c_noteList[x / dnlT].title = res[x];
-                        c_noteList[x / dnlT].body = res[x + 1];
-                        c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false;
-                        c_noteList[x / dnlT].color = res[x + 3];
-                        c_noteList[x / dnlT].lastedited = res[x + 4];
+                        c_noteList[x / dnlT].title = res[x] || y.title;
+                        c_noteList[x / dnlT].body = res[x + 1] || y.body;
+                        c_noteList[x / dnlT].todoCheck = y.encrypted ? res[x + 2] : (res[x + 2] === "true" ? true : false /*  || y.todoCheck */ );
+                        c_noteList[x / dnlT].color = res[x + 3] || y.color;
+                        c_noteList[x / dnlT].lastedited = res[x + 4] || y.lastedited;
                         c_noteList[x / dnlT].encrypted = y.encrypted;
+
+                        // c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false || y.todoCheck;
                     }
 
                     console.log("Got noteList", c_noteList);
+
+                    typeof cb === "function" && cb(c_noteList);
+                });
+            };
+
+            var decryptor2 = function(data, key2, cb) {
+                var decryptList = [];
+
+                var key = btoa(key2);
+                var iv = key;
+
+                var dnl = data.length;
+
+                for (var x = 0; x < dnl; x++) {
+                    var y = data[x];
+
+                    if (typeof y.todoCheck === "boolean")
+                        continue;
+
+                    decryptList.push([iv, y.title]);
+                    decryptList.push([iv, y.body]);
+                    decryptList.push([iv, y.todoCheck]);
+                    decryptList.push([iv, y.color]);
+                    decryptList.push([iv, y.lastedited]);
+                }
+
+                var dnlT = 5;
+
+                page.cmd("aesDecrypt", [
+                    decryptList, [key]
+                ], (res) => {
+                    // console.log("Decrypted local note-stuff", res);
+
+                    var c_noteList = [];
+
+                    for (var x = 0; x < dnl * dnlT; x += dnlT) {
+                        var y = data[x / dnlT];
+
+                        // console.log("Reading local notes", x, x / 4, y);
+
+                        c_noteList[x / dnlT] = {};
+
+                        c_noteList[x / dnlT].uuid = y.uuid;
+                        c_noteList[x / dnlT].title = res[x] || y.title;
+                        c_noteList[x / dnlT].body = res[x + 1] || y.body;
+                        c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false || y.todoCheck;
+                        c_noteList[x / dnlT].color = res[x + 3] || y.color;
+                        c_noteList[x / dnlT].lastedited = res[x + 4] || y.lastedited;
+                        c_noteList[x / dnlT].encrypted = y.encrypted;
+                    }
+
+                    console.log("Got noteList 2", c_noteList);
 
                     typeof cb === "function" && cb(c_noteList);
                 });
@@ -473,9 +530,11 @@ app = new Vue({
                 ], (notes) => {
                     if (notes) {
                         decryptor(notes, function(c_noteList) {
+                            // decryptor2(c_noteList_, key, function(c_noteList) {
                             dis.getList = "s";
                             dis.noteList = c_noteList;
                             dis.p_noteList = c_noteList;
+                            // });
                         });
                     }
                 });
@@ -489,9 +548,11 @@ app = new Vue({
 
                     if (data) {
                         decryptor(data.local_notes, function(c_noteList) {
+                            // decryptor2(c_noteList_, key, function(c_noteList) {
                             dis.getList = "l";
                             dis.noteListL = c_noteList;
                             dis.p_noteList = c_noteList;
+                            // });
                         });
                     }
                 });
@@ -1049,7 +1110,7 @@ var writeBlaTo = function(to, bla, cb1, cb2) {
     });
 };
 
-var encrypt = function(text, mode, key, iv, cb) {
+encrypt = function(text, mode, key, iv, cb) {
     var mode = mode || 0;
 
     var key = key || "";
@@ -1074,32 +1135,47 @@ var encrypt = function(text, mode, key, iv, cb) {
     } else return false;
 };
 
-var encryptor = function(note, nNote, cb1, key, cb2) {
-    var cb1 = typeof cb1 === "function" ? cb1 : undefined;
-    var cb2 = typeof cb2 === "function" ? cb2 : cb1;
+encryptor = function(note, nNote, cb, key) {
+    var cb = typeof cb === "function" ? cb : undefined;
 
     var these = ["title", "body", "todoCheck", "color", "lastedited"];
     var thesetS = [false, false, true, false, false];
 
-    var genEncryptorStr = function(x) {
+    var x2 = -1;
+    var enc2 = false;
+    var genEncryptorStr = function(x, mode) {
         var encryptorStr_ = ``;
 
+        x2++;
         var x = x + 1;
         var y = these[x];
 
+        var mode = mode === 1 ? 1 : 0;
+
         encryptorStr_ += `
-            encrypt(note_['` + y + `']` + (thesetS[x] ? `.toString()` : ``) +
-            `, 0, "", "", function(res` + x + `) {
-                nNote_['` + y + `'] = res` + x + `;
+            console.log("Now encrypting '` + y + `'..", n` + (mode === 0 && note.encrypted ? `N` : ``) + `ote_['` + y + `']);
+            encrypt(n` + (mode === 0 && note.encrypted ? `N` : ``) + `ote_['` + y + `']` + (thesetS[x] ? `.toString()` : ``) +
+            `, ` + mode + `, key_, "", function(res` + x2 + `, text` + x2 + `, mode` + x2 + `, key` + x2 + `, iv` + x2 + `, bR1` + x2 + `, bR2` + x2 + `) {
+                // console.log("Encrypted '` + y + `'", [res` + x2 + `, text` + x2 + `, mode` + x2 + `, key` + x2 + `, iv` + x2 + `, bR1` + x2 + `, bR2` + x2 + `]);
+                nNote_['` + y + `'] = res` + x2 + (mode === 1 ? `[2]` : ``) + `;
                 `;
 
-        if (x < these.length - 1)
-            encryptorStr_ += genEncryptorStr(x);
+        if (x < these.length - 1) {
+            encryptorStr_ += genEncryptorStr(x, mode);
+        }
 
-        if (x === these.length - 1)
+        if (x === these.length - 1 && !enc2 && note.encrypted) {
+            encryptorStr_ += `
+                console.log("Encrypting with ECIES!");`;
+            enc2 = true;
+            encryptorStr_ += genEncryptorStr(-1, 0);
+        } else if (x === these.length - 1) {
             encryptorStr_ += `
                 // console.log("Encryptor encrypted!", nNote_, note_);
-                cb1_(nNote_, note_);`;
+                cb_(nNote_, note_);`;
+        } else {
+            // console.log(x === these.length - 1, enc2, note.encrypted);
+        }
 
         encryptorStr_ += `
             });`;
@@ -1107,41 +1183,12 @@ var encryptor = function(note, nNote, cb1, key, cb2) {
         return encryptorStr_;
     };
 
-    var encryptorStr = `(function(note_, nNote_, cb1_, key_, cb2_) {` + genEncryptorStr(-1) + `})(note, nNote, cb1, key, cb2);`;
+    var encryptorStr = `(function(note_, nNote_, cb_, key_) {
+        // console.log(note_, nNote_, cb_, key_);` +
+        (note.encrypted ? genEncryptorStr(-1, 1) : genEncryptorStr(-1, 0)) + `
+    })(note, nNote, cb, key);`;
     // console.log("Encryptor Str", encryptorStr);
     eval(encryptorStr);
-
-    // encrypt(note.title, 0, "", "", function(res1) {
-    //     nNote.title = res1;
-    //     encrypt(note.body, 0, "", "", function(res2) {
-    //         nNote.body = res2;
-    //         encrypt(note.todoCheck.toString(), 0, "", "", function(res3) {
-    //             nNote.todoCheck = res3;
-    //             encrypt(note.lastedited, 0, "", "", function(res4) {
-    //                 nNote.lastedited = res4;
-
-    //                 if (note.encrypted) {
-    //                     encrypt(nNote.title, 1, key, "", function(res1_) {
-    //                         nNote.title = res1_;
-    //                         encrypt(nNote.body, 1, key, "", function(res2_) {
-    //                             nNote.body = res2_;
-    //                             encrypt(nNote.todoCheck.toString(), 1, key, "", function(res3_) {
-    //                                 nNote.todoCheck = res3_;
-    //                                 encrypt(nNote.lastedited, 1, key, "", function(res4_) {
-    //                                     nNote.lastedited = res4_;
-
-    //                                     cb2(nNote, note);
-    //                                 });
-    //                             });
-    //                         });
-    //                     });
-    //                 } else {
-    //                     cb1(nNote, note);
-    //                 }
-    //             });
-    //         });
-    //     });
-    // });
 };
 
 function showError(msg) {
