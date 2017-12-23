@@ -123,7 +123,7 @@ markedR.link = function(href, title, text) {
 
 
 
-function openNewTab(url) {
+openNewTab = function(url) {
     page.cmd("wrapperOpenWindow", [url, "_blank", ""]);
     return false;
 }
@@ -146,6 +146,53 @@ app = new Vue({
                         <h2>Thundote</h2>
                     </route-link>
                 </div>
+                <div class="app-nav">
+                    <ul class="menu">
+                        <!--<avatar v-if="isLoggedIn" v-bind:cert_user_id="userInfo.cert_user_id"></avatar>
+                        <avatar v-else cert_user_id=""></avatar>
+                        <li class="divider"></li>-->
+                        <li class="menu-item">
+                            <div v-if="checkReminders()" class="menu-badge">
+                                <label class="label label-primary">{{ checkReminders() }}</label>
+                            </div>
+                            <route-link to="app/reminders">
+                                <i class="mdi">{{ checkReminders() ? 'notifications' : 'notifications_none' }}</i> Reminders
+                            </route-link>
+                        </li>
+                        <li class="divider"></li>
+                        <li class="menu-item">
+                            <a href="./?/app/local" v-on:click.prevent="goto('/app/local'); setGetList('l')">
+                                <i class="mdi">cloud_off</i> Local notes
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="./?/app/synced" v-on:click.prevent="goto('/app/synced'); setGetList('s')">
+                                <i class="mdi">cloud</i> Synced notes
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li class="menu-item">
+                            <a href="./?/app/shared" v-on:click.prevent="goto('/app/shared'); setGetList('sh')">
+                                <i class="mdi">cloud_upload</i> Own shared notes
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="./?/app/oshared" v-on:click.prevent="goto('/app/oshared'); setGetList('osh')">
+                                <i class="mdi">cloud_download</i> Others shared notes
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li class="menu-item">
+                            <route-link to="app/settings"><i class="mdi">settings</i> Settings</route-link>
+                        </li>
+                        <li class="divider" data-content="LINKS"></li>
+                        <li class="menu-item">
+                            <a href="https://github.com/AnthyG/Thundote" v-on:click.prevent="return openNewTab('https://github.com/AnthyG/Thundote');">
+                                <i class="icon icon-link"></i> GitHub
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         
             <a class="off-canvas-overlay" href="#close" v-on:click.prevent="toggleLeftSidebar(false)"></a>
@@ -155,6 +202,9 @@ app = new Vue({
                     <component ref="view" v-bind:is="currentView"
                     v-on:getUserInfo="getUserInfo" v-on:logIn="logIn" v-on:logOut="logOut"
                     v-bind:userInfo="userInfo" v-bind:siteInfo="siteInfo"
+
+                    v-on:getReminders="getReminders" v-bind:checkReminders="checkReminders" v-bind:reminders="reminders"
+                    v-bind:getLists="getLists()" v-bind:getListsN="getLists(true)"
 
                     v-on:addNote="addNote" v-bind:colors="colors"
                     v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
@@ -177,7 +227,8 @@ app = new Vue({
         noteList: null,
         noteListL: null,
         p_noteList: null,
-        searchFor: ''
+        searchFor: '',
+        reminders: null
     },
     computed: {
         isLoggedIn: function() {
@@ -223,11 +274,13 @@ app = new Vue({
                     dis.noteList = null;
                     dis.noteListL = null;
                     dis.p_noteList = null;
+                    dis.reminders = null;
 
                     dis.getUserInfo();
                     dis.goto('/app');
 
                     dis.getNoteList(dis.getList, true);
+                    dis.getReminders();
                 });
             });
         },
@@ -239,6 +292,7 @@ app = new Vue({
                 dis.noteList = null;
                 dis.noteListL = null;
                 dis.p_noteList = null;
+                dis.reminders = null;
 
                 console.log("Logged out");
 
@@ -249,11 +303,6 @@ app = new Vue({
         goto: function(to) {
             this.leftSidebarShown = false;
             Router.navigate(to);
-        },
-        setSearch: function(s) {
-            console.log("Setting searchFor", s);
-            if (typeof s === "string")
-                this.searchFor = s;
         },
         getUserInfo: function() {
             if (this.siteInfo == null || this.siteInfo.cert_user_id == null) {
@@ -288,16 +337,53 @@ app = new Vue({
 
                 console.log("Got user-info", res, user, dis.siteInfo, dis.userInfo);
 
+                dis.getReminders();
+
                 if (Router.currentRoute === "")
                     dis.goto('/app');
             });
+        },
+        getReminders: function() {
+            if (!this.isLoggedIn) return false;
+
+            this.reminders = [{
+                uuid: "UUID",
+                rtime: moment().add(2, 'hours').format("x")
+            }];
+
+            console.log("Got reminders", this.reminders);
+        },
+        checkReminders: function() {
+            if (!this.isLoggedIn) return false;
+
+            if (this.reminders !== null && this.reminders.length > -1) {
+                return this.reminders.length;
+            }
+            return false;
+        },
+        setSearch: function(s) {
+            if (!this.isLoggedIn) return false;
+
+            console.log("Setting searchFor", s);
+            if (typeof s === "string")
+                this.searchFor = s;
+        },
+        getLists: function(n) {
+            if (!this.isLoggedIn) return false;
+
+            var n = n ? true : false;
+
+            var lists = ["l", "s", "sh", "osh"];
+            var listsn = ["local", "synced", "shared", "others shared"];
+
+            return n ? listsn : lists;
         },
         setGetList: function(to, forceget) {
             if (!this.isLoggedIn) return false;
 
             var forceget = forceget === true ? true : false;
 
-            var lists = ["l", "c"];
+            var lists = this.getLists();
 
             if (to === true) {
                 var ni = lists.indexOf(this.getList) + 1;
@@ -311,12 +397,12 @@ app = new Vue({
         getNoteList: function(l, forceget) {
             if (!this.isLoggedIn) return false;
 
-            var lists = ["l", "c"];
+            var lists = this.getLists();
 
             var l = lists.indexOf(l) !== -1 ? l : (lists.indexOf(this.getList) !== -1 ? this.getList : "l");
 
             var forceget = forceget === true ? true : false;
-            var ncl = l === "c" ? this.noteList : this.noteListL;
+            var ncl = l === "s" ? this.noteList : this.noteListL;
             console.log("Getting noteList", forceget, l, ncl);
             if (!forceget && ncl !== null) {
                 this.getList = l;
@@ -376,7 +462,7 @@ app = new Vue({
                 });
             };
 
-            if (l === "c") {
+            if (l === "s") {
                 page.cmd("dbQuery", [
                     "SELECT notes.json_id," +
                     " notes.uuid, notes.title, notes.body, notes.todoCheck, notes.color, notes.lastedited, notes.encrypted," +
@@ -387,7 +473,7 @@ app = new Vue({
                 ], (notes) => {
                     if (notes) {
                         decryptor(notes, function(c_noteList) {
-                            dis.getList = "c";
+                            dis.getList = "s";
                             dis.noteList = c_noteList;
                             dis.p_noteList = c_noteList;
                         });
@@ -426,7 +512,7 @@ app = new Vue({
                 "encrypted": (key ? true : false)
             };
 
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
 
             var key = typeof key === "string" ? key : "";
 
@@ -487,7 +573,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -511,7 +597,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -532,7 +618,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -578,7 +664,7 @@ app = new Vue({
                     encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
                         data.notes[nid] = nNote_;
                         writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
-                            // dis.getNoteList("c");
+                            // dis.getNoteList("s");
                         });
                     });
                 });
@@ -606,7 +692,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid = null;
 
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -638,7 +724,7 @@ app = new Vue({
 
                     data.notes.splice(nid, 1);
                     writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
-                        // dis.getNoteList("c");
+                        // dis.getNoteList("s");
                     });
                 });
             } else {
@@ -907,12 +993,19 @@ class Page extends ZeroFrame {
                 app.serverInfo = res;
             });
 
-            var Home = require("./router_pages/home.js");
             var Note = require("./router_pages/note.js");
+            var Reminders = require("./router_pages/reminders.js");
+            var Settings = require("./router_pages/settings.js");
+            var Home = require("./router_pages/home.js");
 
             VueZeroFrameRouter.VueZeroFrameRouter_Init(Router, app, [
                 { route: "note/:uuid", component: Note },
+                { route: "app/reminders", component: Reminders },
+                { route: "app/settings", component: Settings },
+                { route: "app/:list/:search", component: Home },
+                { route: "app/:list", component: Home },
                 { route: "app", component: Home },
+                { route: ":anything", component: Home },
                 { route: "", component: Home }
             ]);
             // }

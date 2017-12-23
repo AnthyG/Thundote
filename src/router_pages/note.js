@@ -10,6 +10,8 @@ var Note = {
         userInfo: Object,
         siteInfo: Object,
         getList: String,
+        getLists: Array,
+        getListsN: Array,
         colors: Array,
         noteList: {
             type: Array,
@@ -46,8 +48,8 @@ var Note = {
             return this.userInfo.cert_user_id != null;
         },
         curList: function() {
-            var lists = ["l", "c"];
-            var listsn = ["local", "synced"];
+            var lists = this.getLists;
+            var listsn = this.getListsN;
             return listsn[lists.indexOf(this.getList)];
         }
     },

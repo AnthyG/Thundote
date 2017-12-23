@@ -8,9 +8,35 @@ var Home = {
             Router.navigate('');
             console.log("Redirected to LP", this.userInfo);
         } else {
-            Router.navigate('/app');
-            this.$emit('getNoteList');
-            console.log(this.noteList, this.noteList !== null, this.searchFor);
+            var lists = this.getLists;
+            var listsn = this.getListsN;
+
+            console.log("Lists", lists, listsn);
+
+            if (!Router.currentParams.hasOwnProperty("list") || Router.currentParams.list == "") {
+                this.$emit('setGetList', "local");
+                Router.navigate('/app/local');
+            } else if (Router.currentParams.hasOwnProperty("list")) {
+                var trycurlist = Router.currentParams.list;
+                var trycurlistI = listsn.indexOf(trycurlist);
+                if (trycurlistI !== -1) {
+                    this.$emit('setGetList', lists[trycurlistI]);
+                    Router.navigate('/app/' + trycurlist);
+                } else {
+                    this.$emit('setGetList', "local");
+                    Router.navigate('/app/local');
+                }
+            } else {
+                this.$emit('getNoteList');
+            }
+
+            if (Router.currentParams.hasOwnProperty("search") && Router.currentParams.search != "") {
+                this.searchFor = Router.currentParams.search;
+                console.log("Searching", s);
+                this.$emit('setSearch', s);
+            }
+
+            console.log("Staying on Home", Router.currentParams, this.noteList, this.noteList !== null, this.searchFor);
         }
 
         console.log("Loaded App (home)", this.userInfo);
@@ -19,6 +45,8 @@ var Home = {
         userInfo: Object,
         siteInfo: Object,
         getList: String,
+        getLists: Array,
+        getListsN: Array,
         noteList: {
             type: Array,
             default: function() {
@@ -39,9 +67,16 @@ var Home = {
             return this.userInfo.cert_user_id != null;
         },
         curList: function() {
-            var lists = ["l", "c"];
-            var listsn = ["local", "synced"];
+            var lists = this.getLists;
+            var listsn = this.getListsN;
             return listsn[lists.indexOf(this.getList)];
+        },
+        listIcon: function() {
+            return this.getList === 'l' ? 'cloud_off' :
+                (this.getList === 's' ? 'cloud' :
+                    (this.getList === 'sh' ? 'cloud_upload' :
+                        (this.getList === 'osh' ? 'cloud_download' :
+                            'error')));
         },
         p_noteList: function() {
             var dis = this;
@@ -67,6 +102,15 @@ var Home = {
             else return [];
         }
     },
+    watch: {
+        getList: function() {
+            console.log("Watching getList", this.getList);
+
+            this.naviList();
+
+            return this.getList;
+        }
+    },
     methods: {
         logIn: function() {
             this.$emit('logIn');
@@ -83,7 +127,7 @@ var Home = {
             this.$emit('setSearch', s);
         },
         addNote: function(e, note, sync, key) {
-            var sync = sync === true ? true : (this.getList === "c" ? true : false);
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
             this.$emit('addNote', note, sync, key);
         },
         todoToggle: function(note, to) {
@@ -103,6 +147,32 @@ var Home = {
         },
         setGetList: function(to, forceget) {
             this.$emit('setGetList', to, forceget);
+        },
+        naviList: function() {
+            var lists = this.getLists;
+            var listsn = this.getListsN;
+
+            var getList = this.getList;
+
+            var getListI = lists.indexOf(getList);
+
+            console.log("Navigating list", getList, getListI);
+
+            if (getListI !== -1) {
+                this.$emit('setGetList', getList);
+
+                var path = '/app/' + listsn[getListI];
+
+                Router.navigate(path);
+            } else {
+                this.$emit('setGetList', "local");
+
+                var path = '/app/local';
+
+                Router.navigate(path);
+            }
+
+            return path;
         }
     },
     template: `
@@ -110,16 +180,19 @@ var Home = {
             <div v-if="isLoggedIn">
                 <div class="empty">
                     <div class="empty-icon">
-                        <i class="mdi">{{ this.getList === 'c' ? 'cloud' : 'cloud_off' }}</i>
+                        <i class="mdi">{{ listIcon }}</i>
                     </div>
                     <p class="empty-title h5">
-                        You have {{ p_noteList !== null ? p_noteList.length : 'no' }} {{ curList }} note{{ p_noteList.length === 1 ? '' : 's' }}
+                        You have {{ p_noteList !== null ? p_noteList.length : 'no' }} {{ curList }} {{ hideChecked ? 'ticked ' : '' }} note{{ p_noteList.length === 1 ? '' : 's' }}
                         <span v-if="searchFor"><i>containing</i> <mark>{{ searchFor }}</mark></span>
                     </p>
                     <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
                     <div class="empty-action">
                         <button class="btn btn-primary btn-action" v-on:click.prevent="setGetList(getList, true)"><i class="mdi">refresh</i></button>
-                        <button class="btn btn-primary" v-on:click.prevent="setGetList(true)"><i class="mdi">{{ this.getList === 'c' ? 'cloud' : 'cloud_off' }}</i></button>
+                        <button class="btn btn-primary"
+                        v-on:click.prevent="setGetList(getList === 'l' ? 's' : (getList === 's' ? 'l' : (getList === 'sh' ? 'osh' : (getList === 'osh' ? 'sh' : 'l'))))">
+                            <i class="mdi">{{ listIcon }}</i>
+                        </button>
                         <button class="btn btn-primary" v-on:click.prevent="addNote"><i class="mdi">add</i></button>
                         <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
                     </div>
