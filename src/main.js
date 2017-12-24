@@ -451,11 +451,11 @@ app = new Vue({
                         c_noteList[x / dnlT] = {};
 
                         c_noteList[x / dnlT].uuid = y.uuid;
-                        c_noteList[x / dnlT].title = res[x] || y.title;
-                        c_noteList[x / dnlT].body = res[x + 1] || y.body;
+                        c_noteList[x / dnlT].title = res[x] !== null ? res[x] : y.title;
+                        c_noteList[x / dnlT].body = res[x + 1] !== null ? res[x + 1] : y.body;
                         c_noteList[x / dnlT].todoCheck = y.encrypted ? res[x + 2] : (res[x + 2] === "true" ? true : false /*  || y.todoCheck */ );
-                        c_noteList[x / dnlT].color = res[x + 3] || y.color;
-                        c_noteList[x / dnlT].lastedited = res[x + 4] || y.lastedited;
+                        c_noteList[x / dnlT].color = res[x + 3] !== null ? res[x + 3] : y.color;
+                        c_noteList[x / dnlT].lastedited = res[x + 4] !== null ? res[x + 4] : y.lastedited;
                         c_noteList[x / dnlT].encrypted = y.encrypted;
 
                         // c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false || y.todoCheck;
