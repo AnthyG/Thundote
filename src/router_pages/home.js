@@ -140,6 +140,9 @@ var Home = {
         editNote: function(note) {
             this.$emit('editNote', note);
         },
+        orderNotes: function(e) {
+            this.$emit('orderNotes', e);
+        },
         deleteNote: function(note) {
             this.$emit('deleteNote', note);
         },
@@ -202,7 +205,7 @@ var Home = {
                 <note-list v-if="p_noteList !== null && p_noteList.length > 0"
                 v-bind:noteList="p_noteList" v-bind:hideChecked="hideChecked" v-bind:searchFor="searchFor"
                 v-bind:colors="colors"
-                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+                v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange" v-on:orderNotes="orderNotes"
                 v-on:deleteNote="deleteNote"></note-list>
             </div>
             <div v-else>

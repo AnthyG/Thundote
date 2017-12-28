@@ -172,8 +172,17 @@ $s: 240px;
     .nohoverhide {
         opacity: 0;
         @include control-transition();
+        &:hover,
+        &:focus,
+        &:active,
+        &.active {
+            opacity: 1;
+        }
     }
-    &:hover {
+    &:hover,
+    &:focus,
+    &:active,
+    &.active {
         .nohoverhide {
             opacity: 1;
         }

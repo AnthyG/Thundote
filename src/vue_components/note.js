@@ -5,6 +5,7 @@ Vue.component("note-card", {
     props: ["cert_user_id", "noteData", "colors"],
     data: function() {
         return {
+            moreMenuActive: false,
             note: this.noteData
         }
     },
@@ -32,6 +33,9 @@ Vue.component("note-card", {
         deleteNote: function() {
             console.log("Delete note", this.note);
             this.$emit('deleteNote', this.note);
+        },
+        toggleMoreMenu: function(to) {
+            this.moreMenuActive = (to === true ? true : (to === false ? false : !this.moreMenuActive));
         }
     },
     template: `
@@ -46,7 +50,7 @@ Vue.component("note-card", {
             <div v-bind:class="'card-body text-break text-ellipsis ' + (note.todoCheck ? 'color-grey-600' : '')"
             style="white-space: pre-line;"
             v-on:click.prevent="openEditor">{{ note.body }}</div>
-            <div v-bind:class="'card-footer nohoverhide bg-color-' + (note.color ? note.color : 'grey-100')">
+            <div v-bind:class="'card-footer nohoverhide ' + (moreMenuActive ? 'active' : '') + ' bg-color-' + (note.color ? note.color : 'grey-100')">
                 <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Open editor" v-on:click.prevent="openEditor"><i class="mdi">mode_edit</i></button>
                 <div class="popover">
                     <button class="btn btn-action btn-link color-grey-900 tooltip tooltip-bottom" data-tooltip="Color"><i class="mdi">color_lens</i></button>
@@ -54,17 +58,20 @@ Vue.component("note-card", {
                         <div class="card">
                             <div class="card-body">
                                 <button v-for="(color) in colors"
-                                v-bind:class="'btn btn-action mr-10 mb-10 tooltip tooltip-bottom circle bg-color-' + color"
+                                v-bind:class="'btn btn-action m-5 tooltip tooltip-bottom circle bg-color-' + color"
                                 style="width: 1.5rem; height: 1.5rem;"
-                                v-bind:data-tooltip="color" v-on:click.prevent="colorChange(color)"></button>
+                                v-bind:data-tooltip="color" v-on:click.prevent="colorChange(color)">
+                                    <div v-if="(note.color ? note.color : 'grey-100') === color" class="icon icon-check color-grey-900"></div>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="dropdown">
-                    <a href="#" class="btn btn-link color-grey-900 dropdown-toggle" tabindex="0">
+                    <button class="btn btn-link color-grey-900 dropdown-toggle" tabindex="0"
+                    >
                         <i class="mdi">more_vert</i>
-                    </a>
+                    </button>
                     <ul class="menu text-light">
                         <li class="menu-item">
                             <a href="#" v-on:click.prevent="">Share</a>

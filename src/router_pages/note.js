@@ -110,9 +110,11 @@ var Note = {
                             <div class="card">
                                 <div class="card-body">
                                     <button v-for="(color) in colors"
-                                    v-bind:class="'btn btn-action mr-10 mb-10 tooltip tooltip-bottom circle bg-color-' + color"
+                                    v-bind:class="'btn btn-action m-5 tooltip tooltip-bottom circle bg-color-' + color"
                                     style="width: 1.5rem; height: 1.5rem;"
-                                    v-bind:data-tooltip="color" v-on:click.prevent="colorChange(color)"></button>
+                                    v-bind:data-tooltip="color" v-on:click.prevent="colorChange(color)">
+                                        <div v-if="(note.color ? note.color : 'grey-100') === color" class="icon icon-check color-grey-900"></div>
+                                    </button>
                                 </div>
                             </div>
                         </div>

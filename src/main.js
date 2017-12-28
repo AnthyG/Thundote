@@ -207,7 +207,7 @@ app = new Vue({
                     v-bind:getLists="getLists()" v-bind:getListsN="getLists(true)"
 
                     v-on:addNote="addNote" v-bind:colors="colors"
-                    v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange"
+                    v-on:editNote="editNote" v-on:todoToggle="todoToggle" v-on:colorChange="colorChange" v-on:orderNotes="orderNotes"
                     v-on:deleteNote="deleteNote"
 
                     v-on:setGetList="setGetList" v-on:getNoteList="getNoteList" v-bind:getList="getList" v-bind:noteList="p_noteList"
@@ -746,6 +746,43 @@ app = new Vue({
                     });
                 });
             }
+        },
+        orderNotes: function(e) {
+            if (!this.isLoggedIn) return false;
+
+            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+
+            console.log("Ordering notes", e);
+
+            var onid,
+                nid;
+
+            e.layout.items.forEach(function(item, i) {
+                if (e.element === item.element) {
+                    console.log(item, i, item.element.getAttribute("index"));
+
+                    onid = parseInt(item.element.getAttribute("index"));
+                    nid = i;
+                }
+            });
+
+            var r_onid = this.p_noteList.length - onid - 1;
+            var r_nid = this.p_noteList.length - nid - 1;
+
+            var cNote1 = JSON.parse(JSON.stringify(this.p_noteList[r_onid]));
+            var cNote2 = JSON.parse(JSON.stringify(this.p_noteList[r_nid]));
+            console.log(onid, r_onid, nid, r_nid, cNote1, cNote2);
+
+            // this.p_noteList.splice(r_onid, 1);
+            // this.p_noteList.splice(r_nid, 0, cNote1);
+
+            // if (sync) {
+            //     var r_onid = this.noteList.length - onid;
+            //     console.log(onid, r_onid, this.noteList[r_onid]);
+            // } else {
+            //     var r_onid = this.noteListL.length - onid;
+            //     console.log(onid, r_onid, this.noteListL[r_onid]);
+            // }
         },
         deleteNote: function(note) {
             if (!this.isLoggedIn) return false;

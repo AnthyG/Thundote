@@ -1,20 +1,25 @@
 var Vue = require("vue/dist/vue.min.js");
 var Router = require("../router.js");
 
-var Isotope = require("isotope-layout");
-require("isotope-fit-columns");
-require("isotope-packery");
+Packery = require("packery");
+Draggabilly = require("draggabilly");
+
+var makeDraggie = function(iso) {
+    console.log(iso);
+    iso.getItemElements().forEach(function(gridItem, i) {
+        var draggie = new Draggabilly(gridItem);
+
+        iso.bindDraggabillyEvents(draggie);
+    });
+};
 
 Vue.component('note-list', {
     mounted: function() {
         var grid = document.querySelector('.grid');
 
-        this.iso = new Isotope('.grid', {
+        this.iso = new Packery('.grid', {
             itemSelector: '.grid-item',
-            layoutMode: 'packery',
-            packery: {
-                gutter: 0,
-            },
+            gutter: 0,
             stagger: 50,
             transitionDuration: 150,
             percentPosition: true,
@@ -22,19 +27,19 @@ Vue.component('note-list', {
                 index: '[index]'
             },
             sortBy: 'index',
-            sortAscending: true,
-            initLayout: false
+            sortAscending: true
         });
+
+        this.iso.on('dragItemPositioned', this.orderNotes);
 
         console.log("Binding Masonry", this.$el, grid, this.iso);
 
         var dis = this;
 
         this.$nextTick(function() {
-            dis.iso.layout();
-
             dis.iso.reloadItems();
-            dis.iso.arrange({});
+            dis.iso.layout();
+            makeDraggie(dis.iso);
         });
     },
     props: {
@@ -68,10 +73,8 @@ Vue.component('note-list', {
             var dis = this;
 
             this.$nextTick(function() {
-                dis.iso.layout();
-
                 dis.iso.reloadItems();
-                dis.iso.arrange({});
+                dis.iso.layout();
             });
 
             return this.r_noteList;
@@ -86,13 +89,16 @@ Vue.component('note-list', {
         },
         editNote: function(note) {
             this.iso.reloadItems();
-            this.iso.arrange({});
+            makeDraggie(dis.iso);
 
             this.$emit('editNote', note);
         },
+        orderNotes: function(e) {
+            this.$emit('orderNotes', e);
+        },
         deleteNote: function(note) {
             this.iso.reloadItems();
-            this.iso.arrange({});
+            makeDraggie(dis.iso);
 
             this.$emit('deleteNote', note);
         }
