@@ -80,6 +80,9 @@ Vue.component("note-card", {
                             <a href="#" v-on:click.prevent="">Share</a>
                         </li>
                         <li class="menu-item">
+                            <a href="#" v-on:click.prevent="">Set up reminder</a>
+                        </li>
+                        <li class="menu-item">
                             <a href="#" v-on:click.prevent="">Encrypt</a>
                         </li>
                         <li class="menu-item divider"></li>
