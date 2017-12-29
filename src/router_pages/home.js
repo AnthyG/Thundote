@@ -193,11 +193,11 @@ var Home = {
                     <p class="empty-subtitle">Add new notes and tick your completed tasks!</p>
                     <div class="empty-action">
                         <button class="btn btn-primary btn-action" v-on:click.prevent="setGetList(getList, true)"><i class="mdi">refresh</i></button>
-                        <button class="btn btn-primary"
+                        <button class="btn btn-primary btn-action"
                         v-on:click.prevent="setGetList(getList === 'l' ? 's' : (getList === 's' ? 'l' : (getList === 'sh' ? 'osh' : (getList === 'osh' ? 'sh' : 'l'))))">
                             <i class="mdi">{{ listIcon }}</i>
                         </button>
-                        <button class="btn btn-primary" v-on:click.prevent="addNote"><i class="mdi">add</i></button>
+                        <button class="btn btn-primary btn-action" v-on:click.prevent="addNote"><i class="mdi">add</i></button>
                         <button class="btn btn-secondary" v-on:click.prevent="toggleHideChecked">{{ hideChecked ? 'Show ticked' : 'Hide ticked' }}</button>
                     </div>
                     <!--<h5 v-if="searchFor"><br>{{ p_noteList.length }} search-results for <mark>{{ searchFor }}</mark></h5>-->

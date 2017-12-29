@@ -5,6 +5,12 @@ Packery = require("packery");
 Draggabilly = require("draggabilly");
 
 var makeDraggie = function(iso) {
+
+    /*
+    UNBIND NEEDS TO BE DONE AS WELL!!
+    OR JUST BIND TO THE NEW ELEMENTS..
+    */
+
     console.log(iso);
     iso.getItemElements().forEach(function(gridItem, i) {
         var draggie = new Draggabilly(gridItem);
@@ -89,7 +95,7 @@ Vue.component('note-list', {
         },
         editNote: function(note) {
             this.iso.reloadItems();
-            makeDraggie(dis.iso);
+            makeDraggie(this.iso);
 
             this.$emit('editNote', note);
         },
@@ -98,7 +104,7 @@ Vue.component('note-list', {
         },
         deleteNote: function(note) {
             this.iso.reloadItems();
-            makeDraggie(dis.iso);
+            makeDraggie(this.iso);
 
             this.$emit('deleteNote', note);
         }

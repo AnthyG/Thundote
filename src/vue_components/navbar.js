@@ -17,7 +17,7 @@ Vue.component("navbar", {
     },
     methods: {
         toggleMenu: function(to) {
-            if (to && typeof to === "boolean")
+            if (typeof to === "boolean")
                 this.menuShown = to;
             else
                 this.menuShown = !this.menuShown;

@@ -35,11 +35,15 @@ Vue.component("note-card", {
             this.$emit('deleteNote', this.note);
         },
         toggleMoreMenu: function(to) {
-            this.moreMenuActive = (to === true ? true : (to === false ? false : !this.moreMenuActive));
+            console.log("Toggle more menu", to, this.moreMenuActive);
+            if (typeof to === "boolean")
+                this.moreMenuActive = to;
+            else
+                this.moreMenuActive = !this.moreMenuActive;
         }
     },
     template: `
-        <div v-bind:class="'card color-grey-800 bg-color-' + (note.color ? note.color : 'grey-100')" v-bind:data-ticked="note.todoCheck ? 'true' : 'false'">
+        <div v-bind:class="'card color-grey-800 bg-color-' + (note.color ? note.color : 'grey-100')" v-bind:data-ticked="note.todoCheck ? 'true' : 'false'" v-on:focusout="toggleMoreMenu(false)">
             <div class="card-header">
                 <button class="btn btn-action btn-link color-grey-900 btn-sm nohoverhide float-right tooltip tooltip-bottom" v-bind:data-tooltip="note.todoCheck ? 'Un-tick!' : 'Tick!'" v-on:click.prevent="todoToggle">
                     <i v-bind:class="'icon icon-' + (note.todoCheck ? 'check' : 'plus')"></i>
@@ -67,9 +71,8 @@ Vue.component("note-card", {
                         </div>
                     </div>
                 </div>
-                <div class="dropdown">
-                    <button class="btn btn-link color-grey-900 dropdown-toggle" tabindex="0"
-                    >
+                <div v-bind:class="'dropdown ' + (moreMenuActive ? 'active' : '')">
+                    <button class="btn btn-action btn-link color-grey-900 dropdown-toggle" tabindex="0" v-on:focus="toggleMoreMenu(true)" v-on:mousedown="toggleMoreMenu" v-on:blur="toggleMoreMenu(false)">
                         <i class="mdi">more_vert</i>
                     </button>
                     <ul class="menu text-light">
@@ -79,9 +82,13 @@ Vue.component("note-card", {
                         <li class="menu-item">
                             <a href="#" v-on:click.prevent="">Encrypt</a>
                         </li>
+                        <li class="menu-item divider"></li>
+                        <li class="menu-item">
+                            <a href="#" v-on:click.prevent="deleteNote">Delete</a>
+                        </li>
                     </ul>
                 </div>
-                <button class="btn btn-action btn-link color-grey-900 float-right tooltip tooltip-bottom" data-tooltip="Delete" v-on:click.prevent="deleteNote"><i class="mdi">delete_forever</i></button>
+                <!--<button class="btn btn-action btn-link color-grey-900 float-right tooltip tooltip-bottom" data-tooltip="Delete" v-on:click.prevent="deleteNote"><i class="mdi">delete_forever</i></button>-->
             </div>
         </div>
     `
