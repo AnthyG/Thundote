@@ -1,6 +1,6 @@
 {
     "db_name": "Thundote",
-    "db_file": "data/Thundote.db",
+    "db_file": "data/Thundote3.db",
     "version": 2,
     "maps": {
         "users/.+/data.json": {
@@ -18,6 +18,12 @@
                 }
             ]
         },
+        "users/.+/data_private.json": {
+            "to_table": [{
+                "node": "local_notes",
+                "table": "local_notes"
+            }]
+        },
         "users/.+/content.json": {
             "to_json_table": [
                 "cert_user_id"
@@ -34,7 +40,7 @@
                 ["cert_user_id", "TEXT"]
             ],
             "indexes": ["CREATE UNIQUE INDEX path ON json(directory, file_name)"],
-            "schema_changed": 7
+            "schema_changed": 10
         },
         "notes": {
             "cols": [
@@ -43,13 +49,30 @@
                 ["title", "TEXT"],
                 ["body", "TEXT"],
                 ["todoCheck", "TEXT"],
+                ["rtime", "TEXT"],
                 ["color", "TEXT"],
                 ["lastedited", "TEXT"],
                 ["encrypted", "BOOLEAN"],
                 ["json_id", "INTEGER REFERENCES json (json_id)"]
             ],
             "indexes": ["CREATE UNIQUE INDEX note_key ON notes(json_id, uuid)"],
-            "schema_changed": 8
+            "schema_changed": 16
+        },
+        "local_notes": {
+            "cols": [
+                ["note_id", "INTEGER PRIMARY KEY AUTOINCREMENT"],
+                ["uuid", "TEXT UNIQUE"],
+                ["title", "TEXT"],
+                ["body", "TEXT"],
+                ["todoCheck", "TEXT"],
+                ["rtime", "TEXT"],
+                ["color", "TEXT"],
+                ["lastedited", "TEXT"],
+                ["encrypted", "BOOLEAN"],
+                ["json_id", "INTEGER REFERENCES json (json_id)"]
+            ],
+            "indexes": ["CREATE UNIQUE INDEX local_note_key ON local_notes(json_id, uuid)"],
+            "schema_changed": 16
         },
         "shared": {
             "cols": [
@@ -59,7 +82,7 @@
                 ["json_id", "INTEGER REFERENCES json (json_id)"]
             ],
             "indexes": ["CREATE UNIQUE INDEX shared_key ON shared(json_id, uuid)"],
-            "schema_changed": 4
+            "schema_changed": 13
         },
         "extra_data": {
             "cols": [
@@ -68,7 +91,7 @@
                 ["json_id", "INTEGER REFERENCES json (json_id)"]
             ],
             "indexes": ["CREATE UNIQUE INDEX extra_data_key ON extra_data(json_id)"],
-            "schema_changed": 5
+            "schema_changed": 13
         }
     }
 }

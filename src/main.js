@@ -416,6 +416,8 @@ app = new Vue({
 
             var dis = this;
 
+            var dnlT = 6;
+
             var decryptor = function(data, cb) {
                 var decryptList = [];
 
@@ -430,11 +432,10 @@ app = new Vue({
                     decryptList.push(y.title);
                     decryptList.push(y.body);
                     decryptList.push(y.todoCheck);
+                    decryptList.push(y.rtime);
                     decryptList.push(y.color);
                     decryptList.push(y.lastedited);
                 }
-
-                var dnlT = 5;
 
                 page.cmd("eciesDecrypt", [
                     decryptList
@@ -454,8 +455,9 @@ app = new Vue({
                         c_noteList[x / dnlT].title = res[x] !== null ? res[x] : y.title;
                         c_noteList[x / dnlT].body = res[x + 1] !== null ? res[x + 1] : y.body;
                         c_noteList[x / dnlT].todoCheck = y.encrypted ? res[x + 2] : (res[x + 2] === "true" ? true : false /*  || y.todoCheck */ );
-                        c_noteList[x / dnlT].color = res[x + 3] !== null ? res[x + 3] : y.color;
-                        c_noteList[x / dnlT].lastedited = res[x + 4] !== null ? res[x + 4] : y.lastedited;
+                        c_noteList[x / dnlT].rtime = res[x + 4] !== null ? res[x + 4] : y.rtime;
+                        c_noteList[x / dnlT].color = res[x + 4] !== null ? res[x + 4] : y.color;
+                        c_noteList[x / dnlT].lastedited = res[x + 5] !== null ? res[x + 5] : y.lastedited;
                         c_noteList[x / dnlT].encrypted = y.encrypted;
 
                         // c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false || y.todoCheck;
@@ -484,11 +486,10 @@ app = new Vue({
                     decryptList.push([iv, y.title]);
                     decryptList.push([iv, y.body]);
                     decryptList.push([iv, y.todoCheck]);
+                    decryptList.push([iv, y.rtime]);
                     decryptList.push([iv, y.color]);
                     decryptList.push([iv, y.lastedited]);
                 }
-
-                var dnlT = 5;
 
                 page.cmd("aesDecrypt", [
                     decryptList, [key]
@@ -508,8 +509,9 @@ app = new Vue({
                         c_noteList[x / dnlT].title = res[x] || y.title;
                         c_noteList[x / dnlT].body = res[x + 1] || y.body;
                         c_noteList[x / dnlT].todoCheck = res[x + 2] === "true" ? true : false || y.todoCheck;
-                        c_noteList[x / dnlT].color = res[x + 3] || y.color;
-                        c_noteList[x / dnlT].lastedited = res[x + 4] || y.lastedited;
+                        c_noteList[x / dnlT].rtime = res[x + 3] || y.rtime;
+                        c_noteList[x / dnlT].color = res[x + 4] || y.color;
+                        c_noteList[x / dnlT].lastedited = res[x + 5] || y.lastedited;
                         c_noteList[x / dnlT].encrypted = y.encrypted;
                     }
 
@@ -519,44 +521,30 @@ app = new Vue({
                 });
             };
 
+            var tableName = "local_notes";
             if (l === "s") {
-                page.cmd("dbQuery", [
-                    "SELECT notes.json_id," +
-                    " notes.uuid, notes.title, notes.body, notes.todoCheck, notes.color, notes.lastedited, notes.encrypted," +
-                    " extra_data.auth_address, extra_data.public_key" +
-                    " FROM notes" +
-                    " JOIN extra_data USING (json_id)" +
-                    " WHERE auth_address = '" + app.userInfo.auth_address + "'"
-                ], (notes) => {
-                    if (notes) {
-                        decryptor(notes, function(c_noteList) {
-                            // decryptor2(c_noteList_, key, function(c_noteList) {
-                            dis.getList = "s";
-                            dis.noteList = c_noteList;
-                            dis.p_noteList = c_noteList;
-                            // });
-                        });
-                    }
-                });
-            } else if (l === "l") {
-                var data2_inner_path = "data/users/" + this.siteInfo.auth_address + "/data_private.json";
-                page.cmd("fileGet", {
-                    "inner_path": data2_inner_path,
-                    "required": false
-                }, (data) => {
-                    var data = data ? JSON.parse(data) : {};
-
-                    if (data) {
-                        decryptor(data.local_notes, function(c_noteList) {
-                            // decryptor2(c_noteList_, key, function(c_noteList) {
-                            dis.getList = "l";
-                            dis.noteListL = c_noteList;
-                            dis.p_noteList = c_noteList;
-                            // });
-                        });
-                    }
-                });
+                tableName = "notes";
             }
+            page.cmd("dbQuery", [
+                "SELECT * FROM " + tableName + ", extra_data" +
+                " JOIN json USING (json_id)" +
+                " WHERE directory = 'users/" + app.userInfo.auth_address + "'"
+            ], (notes) => {
+                if (notes) {
+                    decryptor(notes, function(c_noteList) {
+                        // decryptor2(c_noteList_, key, function(c_noteList) {
+                        dis.getList = l;
+
+                        if (l === "s")
+                            dis.noteList = c_noteList;
+                        else if (l === "l")
+                            dis.noteListL = c_noteList;
+
+                        dis.p_noteList = c_noteList;
+                        // });
+                    });
+                }
+            });
         },
         addNote: function(note, sync, key) {
             if (!this.isLoggedIn) return false;
@@ -568,12 +556,13 @@ app = new Vue({
                 "title": "",
                 "body": "",
                 "todoCheck": false,
+                "rtime": "",
                 "color": "grey-100",
                 "lastedited": moment().format("x"),
                 "encrypted": (key ? true : false)
             };
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             var key = typeof key === "string" ? key : "";
 
@@ -582,6 +571,7 @@ app = new Vue({
                 "title": "",
                 "body": "",
                 "todoCheck": "",
+                "rtime": "",
                 "color": "",
                 "lastedited": "",
                 "encrypted": note.encrypted
@@ -628,13 +618,13 @@ app = new Vue({
                 });
             }
         },
-        todoToggle: function(note, to) {
+        todoToggle: function(note, to, sync) {
             if (!this.isLoggedIn) return false;
 
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -645,12 +635,33 @@ app = new Vue({
 
             nNote.todoCheck = (typeof to === "boolean" ? to : !nNote.todoCheck);
 
-            this.editNote(nNote);
+            this.editNote(nNote, sync);
             // this.p_noteList[nid] = nNote;
 
             console.log("Toggled todo-state of note", uuid, nNote.todoCheck);
         },
-        colorChange: function(note, to) {
+        reminderChange: function(note, to, sync) {
+            if (!this.isLoggedIn) return false;
+
+            var uuid = note.uuid;
+            var nid;
+
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
+
+            var editableNotes = this.p_noteList.filter(function(a, b) {
+                nid = a.uuid === uuid ? b : nid;
+                return a.uuid === uuid;
+            });
+            if (editableNotes.length !== 1) return false;
+            var nNote = editableNotes[0];
+
+            nNote.rtime = (typeof to === "integer" ? to : 0);
+
+            this.editNote(nNote, sync);
+
+            console.log("Changed reminder of note", uuid, nNote.rtime);
+        },
+        colorChange: function(note, to, sync) {
             if (!this.isLoggedIn) return false;
 
             if (this.colors.indexOf(to) === -1) return false;
@@ -658,7 +669,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -669,17 +680,17 @@ app = new Vue({
 
             nNote.color = to;
 
-            this.editNote(nNote);
+            this.editNote(nNote, sync);
 
             console.log("Changed color of note", uuid, nNote.color);
         },
-        editNote: function(note) {
+        editNote: function(note, sync) {
             if (!this.isLoggedIn) return false;
 
             var uuid = note.uuid;
             var nid;
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -693,19 +704,24 @@ app = new Vue({
                 "title": "",
                 "body": "",
                 "todoCheck": false,
+                "rtime": "0",
                 "color": "",
-                "lastedited": 0,
+                "lastedited": "0",
                 "encrypted": false
             };
 
-            for (var x in nNote) {
+            for (var x in tNote) {
                 if (note.hasOwnProperty(x) && typeof tNote[x] === typeof note[x]) {
                     nNote[x] = note[x];
+                } else if (!note.hasOwnProperty(x) || typeof tNote[x] !== typeof note[x]) {
+                    nNote[x] = tNote[x];
                 }
             }
             nNote.lastedited = moment().format("x");
 
             // this.p_noteList[nid] = JSON.parse(JSON.stringify(nNote));
+
+            var r_nid = this.p_noteList.length - nid - 1;
 
             var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
             var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
@@ -720,10 +736,10 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Editing synced note", data, nid, JSON.parse(JSON.stringify(nNote)));
+                    console.log("Editing synced note", data, nid, r_nid, JSON.parse(JSON.stringify(nNote)));
 
                     encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
-                        data.notes[nid] = nNote_;
+                        data.notes[r_nid] = nNote_;
                         writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
                             // dis.getNoteList("s");
                         });
@@ -736,10 +752,10 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Editing local note", data, nid, JSON.parse(JSON.stringify(nNote)));
+                    console.log("Editing local note", data, nid, r_nid, JSON.parse(JSON.stringify(nNote)));
 
                     encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
-                        data.local_notes[nid] = nNote_;
+                        data.local_notes[r_nid] = nNote_;
                         writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
                             // dis.getNoteList("l");
                         });
@@ -750,7 +766,7 @@ app = new Vue({
         orderNotes: function(e) {
             if (!this.isLoggedIn) return false;
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             console.log("Ordering notes", e);
 
@@ -790,7 +806,7 @@ app = new Vue({
             var uuid = note.uuid;
             var nid = null;
 
-            var sync = sync === true ? true : (this.getList === "s" ? true : false);
+            var sync = typeof sync === "boolean" ? sync : (this.getList === "s" ? true : false);
 
             var editableNotes = this.p_noteList.filter(function(a, b) {
                 nid = a.uuid === uuid ? b : nid;
@@ -799,6 +815,8 @@ app = new Vue({
             if (editableNotes.length !== 1) return false;
 
             // console.log("Deleting note..", note, nid, editableNotes);
+
+            var r_nid = this.p_noteList.length - nid - 1;
 
             if (sync)
                 this.noteList.splice(nid, 1);
@@ -818,9 +836,9 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Deleting synced note", data, nid, JSON.parse(JSON.stringify(note)));
+                    console.log("Deleting synced note", data, nid, r_nid, JSON.parse(JSON.stringify(note)));
 
-                    data.notes.splice(nid, 1);
+                    data.notes.splice(r_nid, 1);
                     writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
                         // dis.getNoteList("s");
                     });
@@ -832,9 +850,9 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Deleting local note", data, nid, JSON.parse(JSON.stringify(note)));
+                    console.log("Deleting local note", data, nid, r_nid, JSON.parse(JSON.stringify(note)));
 
-                    data.local_notes.splice(nid, 1);
+                    data.local_notes.splice(r_nid, 1);
                     writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
                         // dis.getNoteList("l");
                     });
@@ -1175,7 +1193,14 @@ encrypt = function(text, mode, key, iv, cb) {
 encryptor = function(note, nNote, cb, key) {
     var cb = typeof cb === "function" ? cb : undefined;
 
-    var these = ["title", "body", "todoCheck", "color", "lastedited"];
+    var these = [
+        "title",
+        "body",
+        "todoCheck",
+        "rtime",
+        "color",
+        "lastedited"
+    ];
     var thesetS = [false, false, true, false, false];
 
     var x2 = -1;
@@ -1228,8 +1253,17 @@ encryptor = function(note, nNote, cb, key) {
     eval(encryptorStr);
 };
 
-function showError(msg) {
+function showError(msg, t) {
+    var t = typeof t === "integer" ? t : 500;
     page.cmd("wrapperNotification", [
-        "error", msg
+        "error", msg, t
     ]);
 }
+
+(function() {
+    showError(
+        "<b>As a warning</b>, <i>this Zite is still in Alpha</i>, so notes in<br>" +
+        " might get deleted due to more secure encryption methods or bugs!",
+        10000
+    );
+})();
