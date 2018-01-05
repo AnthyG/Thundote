@@ -22,31 +22,31 @@
     },
     "homepage": "https://github.com/AnthyG/Thundote#readme",
     "devDependencies": {
-        "browserify": "^14.5.0",
+        "browserify": "^15.0.0",
         "browserify-shim": "^3.8.14",
         "gulp": "^3.9.1",
-        "gulp-autoprefixer": "^4.0.0",
-        "gulp-clean-css": "^3.9.0",
+        "gulp-autoprefixer": "^4.1.0",
+        "gulp-clean-css": "^3.9.2",
         "gulp-concat": "^2.6.1",
         "gulp-csscomb": "^3.0.8",
         "gulp-rename": "^1.2.2",
         "gulp-sass": "^3.1.0",
-        "gulp-sourcemaps": "^2.6.1",
+        "gulp-sourcemaps": "^2.6.3",
         "gulp-uglify": "^3.0.0",
         "gulp-util": "^3.0.8",
         "sass-material-colors": "0.0.5",
-        "vinyl-buffer": "^1.0.0",
-        "vinyl-source-stream": "^1.1.0"
+        "vinyl-buffer": "^1.0.1",
+        "vinyl-source-stream": "^2.0.0"
     },
     "dependencies": {
         "autosize": "^4.0.0",
         "draggabilly": "^2.1.1",
-        "marked": "^0.3.7",
-        "moment": "^2.20.0",
+        "marked": "^0.3.9",
+        "moment": "^2.20.1",
         "packery": "^2.1.1",
         "pnglib": "0.0.1",
         "svg4everybody": "^2.1.9",
-        "vue": "^2.5.11"
+        "vue": "^2.5.13"
     },
     "browser": {
         "vue": "vue/dist/vue.common.js"
