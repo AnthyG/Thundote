@@ -736,10 +736,10 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Editing synced note", data, nid, r_nid, JSON.parse(JSON.stringify(nNote)));
+                    console.log("Editing synced note", JSON.parse(JSON.stringify(data)), nid, r_nid, JSON.parse(JSON.stringify(nNote)));
 
                     encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
-                        data.notes[r_nid] = nNote_;
+                        data.notes[nid] = nNote_;
                         writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
                             // dis.getNoteList("s");
                         });
@@ -752,10 +752,10 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Editing local note", data, nid, r_nid, JSON.parse(JSON.stringify(nNote)));
+                    console.log("Editing local note", JSON.parse(JSON.stringify(data)), nid, r_nid, JSON.parse(JSON.stringify(nNote)));
 
                     encryptor(JSON.parse(JSON.stringify(nNote)), JSON.parse(JSON.stringify(nNote)), function(nNote_) {
-                        data.local_notes[r_nid] = nNote_;
+                        data.local_notes[nid] = nNote_;
                         writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
                             // dis.getNoteList("l");
                         });
@@ -785,20 +785,72 @@ app = new Vue({
             var r_onid = this.p_noteList.length - onid - 1;
             var r_nid = this.p_noteList.length - nid - 1;
 
-            var cNote1 = JSON.parse(JSON.stringify(this.p_noteList[r_onid]));
-            var cNote2 = JSON.parse(JSON.stringify(this.p_noteList[r_nid]));
+            if (sync) {
+                var cNote1 = JSON.parse(JSON.stringify(this.noteList[onid]));
+                var cNote2 = JSON.parse(JSON.stringify(this.noteList[nid]));
+
+                this.noteList.splice(onid, 1);
+                this.noteList.splice(nid, 0, cNote1);
+            } else {
+                var cNote1 = JSON.parse(JSON.stringify(this.noteListL[onid]));
+                var cNote2 = JSON.parse(JSON.stringify(this.noteListL[nid]));
+
+                this.noteListL.splice(onid, 1);
+                this.noteListL.splice(nid, 0, cNote1);
+            }
             console.log(onid, r_onid, nid, r_nid, cNote1, cNote2);
 
-            // this.p_noteList.splice(r_onid, 1);
-            // this.p_noteList.splice(r_nid, 0, cNote1);
+            var data_inner_path = "data/users/" + this.userInfo.auth_address + "/data.json";
+            var data2_inner_path = "data/users/" + this.userInfo.auth_address + "/data_private.json";
+            var content_inner_path = "data/users/" + this.userInfo.auth_address + "/content.json";
 
-            // if (sync) {
-            //     var r_onid = this.noteList.length - onid;
-            //     console.log(onid, r_onid, this.noteList[r_onid]);
-            // } else {
-            //     var r_onid = this.noteListL.length - onid;
-            //     console.log(onid, r_onid, this.noteListL[r_onid]);
-            // }
+            var dis = this;
+
+            if (sync) {
+                page.cmd("fileGet", {
+                    "inner_path": data_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Ordering synced note", JSON.parse(JSON.stringify(data)), onid, r_onid, JSON.parse(JSON.stringify(cNote1)), nid, r_nid, JSON.parse(JSON.stringify(cNote2)));
+
+                    encryptor(JSON.parse(JSON.stringify(cNote2)), JSON.parse(JSON.stringify(cNote2)), function(cNote2_) {
+                        data.notes[onid] = cNote2_;
+                        writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
+                            // dis.getNoteList("s");
+                            encryptor(JSON.parse(JSON.stringify(cNote1)), JSON.parse(JSON.stringify(cNote1)), function(cNote1_) {
+                                data.notes[nid] = cNote1_;
+                                writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
+                                    // dis.getNoteList("s");
+                                });
+                            });
+                        });
+                    });
+                });
+            } else {
+                page.cmd("fileGet", {
+                    "inner_path": data2_inner_path,
+                    "required": false
+                }, (data) => {
+                    var data = data ? JSON.parse(data) : {};
+
+                    console.log("Ordering local note", JSON.parse(JSON.stringify(data)), onid, r_onid, JSON.parse(JSON.stringify(cNote1)), nid, r_nid, JSON.parse(JSON.stringify(cNote2)));
+
+                    encryptor(JSON.parse(JSON.stringify(cNote2)), JSON.parse(JSON.stringify(cNote2)), function(cNote2_) {
+                        data.local_notes[onid] = cNote2_;
+                        writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
+                            // dis.getNoteList("l");
+                            encryptor(JSON.parse(JSON.stringify(cNote1)), JSON.parse(JSON.stringify(cNote1)), function(cNote1_) {
+                                data.local_notes[nid] = cNote1_;
+                                writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
+                                    // dis.getNoteList("l");
+                                });
+                            });
+                        });
+                    });
+                });
+            }
         },
         deleteNote: function(note) {
             if (!this.isLoggedIn) return false;
@@ -814,9 +866,9 @@ app = new Vue({
             });
             if (editableNotes.length !== 1) return false;
 
-            // console.log("Deleting note..", note, nid, editableNotes);
-
             var r_nid = this.p_noteList.length - nid - 1;
+
+            // console.log("Deleting note..", note, nid, editableNotes, sync ? this.noteList[r_nid] : this.noteListL[r_nid]);
 
             if (sync)
                 this.noteList.splice(nid, 1);
@@ -836,9 +888,9 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Deleting synced note", data, nid, r_nid, JSON.parse(JSON.stringify(note)));
+                    console.log("Deleting synced note", JSON.parse(JSON.stringify(data)), nid, r_nid, JSON.parse(JSON.stringify(note)));
 
-                    data.notes.splice(r_nid, 1);
+                    data.notes.splice(nid, 1);
                     writeBlaTo(0, JSON.parse(JSON.stringify(data)), function() {
                         // dis.getNoteList("s");
                     });
@@ -850,9 +902,9 @@ app = new Vue({
                 }, (data) => {
                     var data = data ? JSON.parse(data) : {};
 
-                    console.log("Deleting local note", data, nid, r_nid, JSON.parse(JSON.stringify(note)));
+                    console.log("Deleting local note", JSON.parse(JSON.stringify(data)), nid, r_nid, JSON.parse(JSON.stringify(note)));
 
-                    data.local_notes.splice(r_nid, 1);
+                    data.local_notes.splice(nid, 1);
                     writeBlaTo(1, JSON.parse(JSON.stringify(data)), function() {
                         // dis.getNoteList("l");
                     });

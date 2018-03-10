@@ -86,6 +86,38 @@ Vue.component('note-list', {
             return this.r_noteList;
         }
     },
+    watch: {
+        noteList: function() {
+            this.iso.destroy();
+
+            var grid = document.querySelector('.grid');
+
+            this.iso = new Packery('.grid', {
+                itemSelector: '.grid-item',
+                gutter: 0,
+                stagger: 50,
+                transitionDuration: 150,
+                percentPosition: true,
+                getSortData: {
+                    index: '[index]'
+                },
+                sortBy: 'index',
+                sortAscending: true
+            });
+
+            this.iso.on('dragItemPositioned', this.orderNotes);
+
+            console.log("Binding Masonry", this.$el, grid, this.iso);
+
+            var dis = this;
+
+            this.$nextTick(function() {
+                dis.iso.reloadItems();
+                dis.iso.layout();
+                makeDraggie(dis.iso);
+            });
+        }
+    },
     methods: {
         todoToggle: function(note, to) {
             this.$emit('todoToggle', note, to);
