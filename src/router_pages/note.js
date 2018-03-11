@@ -73,15 +73,15 @@ var Note = {
         },
         deleteNote: function() {
             this.$emit('deleteNote', this.note);
-            this.goto('/app');
+            this.goto('/app/' + this.curList);
         }
     },
     template: `
         <div class="modal-lg modal active">
-            <div v-bind:class="'modal-overlay bg-color-i-' + (note.color ? note.color : 'grey-100')" v-on:click.prevent="goto('/app')"></div>
+            <div v-bind:class="'modal-overlay bg-color-i-' + (note.color ? note.color : 'grey-100')" v-on:click.prevent="goto('/app/' + curList)"></div>
             <div v-bind:class="'modal-container bg-color-' + (note.color ? note.color : 'grey-100')">
                 <div class="modal-header">
-                    <button class="btn btn-action btn-link color-grey-900 float-right tooltip tooltip-bottom" data-tooltip="Close editor" v-on:click.prevent="goto('/app')">
+                    <button class="btn btn-action btn-link color-grey-900 float-right tooltip tooltip-bottom" data-tooltip="Close editor" v-on:click.prevent="goto('/app/' + curList)">
                         <i class="icon icon-cross"></i>
                     </button>
                     <div class="modal-title h5">
